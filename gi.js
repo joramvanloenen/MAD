@@ -70,6 +70,16 @@ export class MuseumGI {
     this.uniforms.madGiStrength={value:1.1};
   }
 
+  // Respect the mounting surface so wall reliefs never send bounced light
+  // from the wall's interior. 2D paintings stay very thin.
+  addWallArtProxy(x,y,z,forward,a) {
+    const depth=a.mode==='painting'?.055:
+      a.mode==='voxel'?.19*(1+Math.max(0,...(a.voxels||[]).map(v=>Number(v[2])||0))):
+      .18+Math.min(.76,Math.max(.08,a.reliefDepth??.6))*.8;
+    const half=Math.max(.03,depth*.5);
+    this.addBox(x,y,z+forward*(.22+half),1.35,1.35,half,a.color);
+  }
+
   setupProxies(room,slots,artworks) {
     if(room==='gallery'){
       for(const s of slots) {
@@ -77,14 +87,20 @@ export class MuseumGI {
         if(s.type==='plinth')this.addBox(s.x,.45,s.z,1.17,.46,1.17,'#e3e0d9');
         if(s.type==='floor')this.addBox(s.x,.035,s.z,1.6,.055,1.6,'#d7d4cf');
         if(!a)continue;
-        if(s.type==='wall')this.addBox(s.x,3,s.z+Math.cos(s.rot)*.16,1.4,1.4,.14,a.color);
+        if(s.type==='wall')this.addWallArtProxy(s.x,3,s.z,Math.cos(s.rot),a);
         else this.addSphere(s.x,s.type==='plinth'?2.12:1.5,s.z,1.02,a.color);
       }
     } else {
       artworks.filter(a=>Date.now()-a.createdAt>=14*86400000).forEach((a,i)=>{
         const x=-14+(i%6)*5.5,z=-6+Math.floor(i/6)*5;
-        if(i%3!==0)this.addBox(x,.45,z,1.17,.46,1.17,'#b9bcb4');
-        this.addSphere(x,i%3===0?2.8:2.12,z,1.06,a.color);
+        const original=slots.find(s=>s.id===a.spotId);
+        if(original?.type==='wall'){
+          this.addBox(x,3,z-.12,1.78,2.13,.11,'#aaaead');
+          this.addWallArtProxy(x,3,z,1,a);
+        }else{
+          if(original?.type!=='floor')this.addBox(x,.45,z,1.17,.46,1.17,'#b9bcb4');
+          this.addSphere(x,original?.type==='floor'?1.5:2.12,z,1.06,a.color);
+        }
       });
     }
   }

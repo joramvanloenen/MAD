@@ -106,6 +106,12 @@ function createRoom(){
     powerPreference:MOBILE_SAFE?'default':'high-performance',
     stencil:false
   });
+  renderer.debug.onShaderError=(gl,program,vertexShader,fragmentShader)=>{
+    console.error('MAD GPU shader compilation failed:',
+      gl.getProgramInfoLog(program),
+      gl.getShaderInfoLog(vertexShader),gl.getShaderInfoLog(fragmentShader));
+    showRenderError('The browser could not compile a gallery material. Try lightweight mode.');
+  };
   renderer.domElement.addEventListener('webglcontextlost',e=>{
     e.preventDefault();
     showRenderError('The graphics context was lost. Close other browser tabs and reload MAD in low-power mode.');
@@ -1088,6 +1094,6 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   // Keep only ONE active WebGL context during museum startup.
   // Heavy sculpt/voxel editors are created on first use.
   renderer.render(scene,camera);
-  document.getElementById('bootStatus')?.remove();
+  document.getElementById('bootStatus').style.display='none';
   requestAnimationFrame(tick);if(museumStore.enabled)syncPublicGallery();}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
 </script></body></html>

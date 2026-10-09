@@ -35,6 +35,11 @@ import { MuseumStore } from './museum-store.js';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js';
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
 const museumAudio=new MuseumAudio();
+// Reduced-resource mode is automatic on phones/tablets; ?safe=1 also forces it.
+const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  new URLSearchParams(location.search).has('safe');
+let framesRendered=0,renderRecovery=false;
 const museumStore=new MuseumStore();
 let scene,camera,renderer,gi=null,environment=null,inspector=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
@@ -62,6 +67,30 @@ let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
 function box(w,h,d,col,x=0,y=0,z=0,material){let mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material||new THREE.MeshStandardMaterial({color:col,roughness:.83}));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;return mesh}
 function labelSprite(text,w=2){let c=document.createElement('canvas');c.width=512;c.height=192;let ctx=c.getContext('2d');ctx.fillStyle='#f2f0e8';ctx.fillRect(0,0,512,192);ctx.fillStyle='#1b2221';ctx.font='bold 34px Arial';ctx.fillText(text.slice(0,23),25,65);ctx.fillStyle='#66706b';ctx.font='22px Arial';ctx.fillText('MAD  /  OPEN COLLECTION',25,111);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*192/512),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));return m}
+function showRenderError(message){
+  const el=document.getElementById('bootStatus');
+  if(!el){
+    toast(message);
+    return;
+  }
+  el.style.display='grid';
+  el.replaceChildren();
+  const content=document.createElement('div');
+  content.style.maxWidth='430px';
+  const heading=document.createElement('h2');
+  heading.textContent='MAD graphics issue';
+  const description=document.createElement('p');
+  description.style.cssText='font:14px/1.6 system-ui;color:#e5ece7';
+  description.textContent=message;
+  const retry=document.createElement('button');
+  retry.className='btn';retry.textContent='TRY LIGHTWEIGHT MODE';
+  retry.addEventListener('click',()=>{
+    const url=new URL(location.href);
+    url.searchParams.set('safe','1');
+    location.href=url.href;
+  });
+  content.append(heading,description,retry);el.append(content);
+}
 function createRoom(){
   if(gi){gi.dispose();gi=null}
   if(environment){environment.dispose();environment=null}
@@ -71,10 +100,22 @@ function createRoom(){
     const materials=Array.isArray(o.material)?o.material:[o.material];
     for(const m of materials){m?.map?.dispose();m?.dispose()}
   });
-  scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#737978');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer)renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.1:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
+  scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#737978');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer){
+  renderer=new THREE.WebGLRenderer({
+    antialias:!MOBILE_SAFE,
+    powerPreference:MOBILE_SAFE?'default':'high-performance',
+    stencil:false
+  });
+  renderer.domElement.addEventListener('webglcontextlost',e=>{
+    e.preventDefault();
+    showRenderError('The graphics context was lost. Close other browser tabs and reload MAD in low-power mode.');
+  });
+  renderer.domElement.addEventListener('webglcontextrestored',()=>location.reload());
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio,MOBILE_SAFE?.9:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
 for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],[.45,24,19.5,0]]){scene.add(box(w,8,d,mat,x,4,z));}
 scene.add(box(39,.3,24,0xd0d0c9,0,8,0));
-environment=buildMuseumEnvironment(scene,room,{quality:matchMedia('(pointer:coarse)').matches?'eco':'high'});
+environment=buildMuseumEnvironment(scene,room,{quality:MOBILE_SAFE?'eco':'high'});
 const gate=box(.12,2.85,3.1,0xffffff,18.52,1.43,0);
 gate.material.transparent=true;gate.material.opacity=0;gate.material.depthWrite=false;gate.castShadow=false;scene.add(gate);
 for(const z of [-1.68,1.68])scene.add(box(.24,3.25,.22,0xe4e3dc,18.55,1.63,z));
@@ -87,8 +128,13 @@ if(room==='gallery'){for(let s of slots)makeSpot(s)}else{artworks.filter(a=>expi
 const wallText=labelSprite(room==='gallery'?'THE GALLERY — NOW SHOWING':'THE DEPOT — COLLECTION',4);wallText.position.set(0,5,-11.73);scene.add(wallText);
 camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
   try{
-    gi=new MuseumGI({renderer,room,slots,artworks});
-    gi.decorateScene(scene);
+    // The six sampler3D GI uniforms plus large gallery light arrays can
+    // exceed mobile fragment limits. Mobile uses cheap hemispherical bounce
+    // illumination instead; do not compile the probe shaders on mobile.
+    if(!MOBILE_SAFE && renderer.capabilities.isWebGL2){
+      gi=new MuseumGI({renderer,room,slots,artworks});
+      gi.decorateScene(scene);
+    }
   }catch(error){
     console.warn('MAD GI unavailable, continuing with standard lighting',error);
     gi?.dispose();gi=null;
@@ -302,7 +348,7 @@ function interact(){
   }
 }
 function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close()}
-function tick(now){requestAnimationFrame(tick);gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
+function tick(now){requestAnimationFrame(tick);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
 camera.position.z=clamp(camera.position.z,-11.15,11.15);
 if(environment?.colliders?.length){
   const p=camera.position,radius=.38;
@@ -316,7 +362,30 @@ if(environment?.colliders?.length){
       if(ox<oz)p.x+=p.x<c.x?-ox:ox;else p.z+=p.z<c.z?-oz:oz}
   }
 }
-museumAudio.step(dt,Math.hypot(camera.position.x-prevX,camera.position.z-prevZ),room);updateTarget()}renderer.render(scene,camera);}
+museumAudio.step(dt,Math.hypot(camera.position.x-prevX,camera.position.z-prevZ),room);updateTarget()}
+try{
+  renderer.render(scene,camera);
+  framesRendered++;
+}catch(error){
+  if(!renderRecovery && gi){
+    renderRecovery=true;
+    console.error('GI render error: falling back to standard gallery lighting',error);
+    gi.dispose();gi=null;
+    scene.traverse(o=>{
+      if(!o.isMesh)return;
+      const list=Array.isArray(o.material)?o.material:[o.material];
+      list.forEach(m=>{
+        if(!m?.userData?.madGi)return;
+        delete m.userData.madGi;
+        m.onBeforeCompile=()=>{};
+        m.customProgramCacheKey=()=>'';m.needsUpdate=true;
+      });
+    });
+    refreshGiUI();toast('Switched to standard lighting to restore rendering.');
+  }else{
+    showRenderError('Graphics rendering stopped: '+(error?.message||String(error)));
+  }
+}}
 document.addEventListener('keydown',e=>{
 if(e.code==='Escape'){
   if($('info').classList.contains('open'))hide('info');
@@ -425,13 +494,14 @@ function visitArtwork(a){
 }
 function refreshGiUI(){
   const state=gi?.mode??'OFF';
-  $('giBtn').textContent='GI: '+state;
+  $('giBtn').textContent=MOBILE_SAFE?'GI: MOBILE':'GI: '+state;
   $('giBtn').classList.toggle('active',state!=='OFF');
   $('giBtn').title='Realtime directional multi-bounce irradiance probes · G to toggle';
   const status=$('giStatus');
-  if(status)status.textContent='INDIRECT LIGHT · '+state;
+  if(status)status.textContent=MOBILE_SAFE?'MOBILE · LIGHTWEIGHT LIGHTING':'INDIRECT LIGHT · '+state;
 }
 function cycleGi(){
+  if(MOBILE_SAFE){toast('Mobile lighting mode: GI ray sampling is disabled to keep the 3D gallery running.');return}
   if(!gi?.enabled){toast('This browser cannot run the WebGL2 GI renderer.');return}
   const state=gi.cycleQuality();
   renderer.setPixelRatio(Math.min(devicePixelRatio,state==='HIGH'?1.45:1.1));
@@ -970,5 +1040,11 @@ $('publish').onclick=async()=>{
   objects=[];createRoom();
   toast(syncMessage);
 };
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});try{createRoom();initSculpt();initVoxels();document.getElementById('bootStatus')?.remove();requestAnimationFrame(tick);if(museumStore.enabled)syncPublicGallery();}catch(e){console.error('MAD initialization failed',e);document.getElementById('bootStatus').textContent='Museum startup error: '+e.message;}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});try{
+  createRoom();
+  // Keep only ONE active WebGL context during museum startup.
+  // Heavy sculpt/voxel editors are created on first use.
+  renderer.render(scene,camera);
+  document.getElementById('bootStatus')?.remove();
+  requestAnimationFrame(tick);if(museumStore.enabled)syncPublicGallery();}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
 </script></body></html>

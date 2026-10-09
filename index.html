@@ -54,11 +54,87 @@ camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
   refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':'THE DEPOT<br>PERMANENT COLLECTION';}
 function expired(a){return Date.now()-a.createdAt>=14*86400000}
 function spotArt(id){return artworks.find(a=>a.spotId===id&&!expired(a))}
-function makeSpot(s){let g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=s.rot;artGroup.add(g);let a=spotArt(s.id),base;
-if(s.type==='wall'){base=box(3.35,3.45,.13,0xd9ddd5,0,3,0);g.add(base);const frame=box(3.13,3.22,.1,a?0x303432:0x98a5a0,0,3,.105);g.add(frame);if(!a){let l=labelSprite('AVAILABLE SPACE',2.65);l.position.set(0,3,.17);g.add(l)}}
-if(s.type==='plinth'){base=box(2.3,.9,2.3,0xe4e4dc,0,.45,0);g.add(base);if(!a){const l=labelSprite('AVAILABLE',1.6);l.position.set(0,1.75,0);l.rotation.y=Math.PI;g.add(l)}}
-if(s.type==='floor'){base=box(3.1,.06,3.1,0xd6d7d0,0,.025,0);g.add(base);for(let dx of [-1.55,1.55])for(let dz of [-1.55,1.55]){g.add(box(.06,.48,.06,0x333836,dx,.25,dz))}for(let dx of [-1.55,1.55])g.add(box(.035,.035,3.1,0x686e69,dx,.49,0));for(let dz of [-1.55,1.55])g.add(box(3.1,.035,.035,0x686e69,0,.49,dz));if(!a){let l=labelSprite('OPEN FLOOR',1.5);l.position.set(0,.9,0);l.rotation.x=-Math.PI/3;g.add(l)}}
-if(a)installArtwork(g,s,a);objects.push({mesh:base,kind:a?'art':'spot',spot:s,art:a});}
+// Quiet, gallery-style availability markers: small and physically mounted.
+// Never place a large floating sign in the middle of an exhibition space.
+function availabilityTexture(spotId){
+  const c=document.createElement('canvas');
+  c.width=640;c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#eeeee8';ctx.fillRect(0,0,640,256);
+  // restrained vertical accent, tiny "+" symbol and concise typographic hierarchy
+  ctx.fillStyle='#8fa28a';ctx.fillRect(0,0,7,256);
+  ctx.strokeStyle='#80947a';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(80,116,34,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(66,116);ctx.lineTo(94,116);
+  ctx.moveTo(80,102);ctx.lineTo(80,130);ctx.stroke();
+  ctx.fillStyle='#27312e';ctx.font='600 37px Arial';
+  ctx.fillText('Available',140,116);
+  ctx.fillStyle='#68756f';ctx.font='23px Arial';
+  ctx.fillText('E  ·  CREATE ART',141,160);
+  ctx.textAlign='right';ctx.font='18px Arial';
+  ctx.fillText(spotId.toUpperCase(),610,38);
+  const texture=new THREE.CanvasTexture(c);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=Math.min(8,renderer?.capabilities.getMaxAnisotropy?.()||1);
+  return texture;
+}
+function mountAvailableMarker(g,s){
+  const width=s.type==='wall'?.76:.70,height=width*.4;
+  const sign=new THREE.Group();
+  sign.add(box(width+.014,height+.014,.022,0x66716a));
+  const face=new THREE.Mesh(
+    new THREE.PlaneGeometry(width,height),
+    new THREE.MeshBasicMaterial({map:availabilityTexture(s.id),toneMapped:false})
+  );
+  face.position.z=.0135;
+  sign.add(face);
+  if(s.type==='wall'){
+    // Mount low on the artwork's wall panel, not in the empty artwork area.
+    sign.position.set(1.02,1.53,.178);
+  }else if(s.type==='plinth'){
+    // A small plaque flush with the plinth's visitor-facing side.
+    sign.position.set(0,.47,1.166);
+  }else{
+    // Discreet tilted floor plaque on a low stand outside the perimeter rail.
+    const x=-1.08,z=1.94;
+    g.add(box(.038,.26,.038,0x606a65,x,.155,z));
+    g.add(box(.22,.025,.22,0x606a65,x,.017,z));
+    sign.position.set(x,.32,z);
+    sign.rotation.x=-.50;
+  }
+  g.add(sign);
+}
+function makeSpot(s){
+  const g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=s.rot;artGroup.add(g);
+  const a=spotArt(s.id);let base;
+  if(s.type==='wall'){
+    base=box(3.35,3.45,.13,0xd9ddd5,0,3,0);
+    g.add(base);
+    // A quiet, nearly-white vacant backing rather than a giant status billboard.
+    const frame=box(3.13,3.22,.1,a?0x303432:0xe6eae4,0,3,.105);
+    g.add(frame);
+    if(!a){
+      const edgeMat=new THREE.LineBasicMaterial({color:0xaeb8ac,transparent:true,opacity:.45});
+      const edge=new THREE.LineSegments(new THREE.EdgesGeometry(frame.geometry),edgeMat);
+      edge.position.copy(frame.position);g.add(edge);
+    }
+  }
+  if(s.type==='plinth'){
+    base=box(2.3,.9,2.3,0xe4e4dc,0,.45,0);
+    g.add(base);
+  }
+  if(s.type==='floor'){
+    base=box(3.1,.06,3.1,0xd6d7d0,0,.025,0);
+    g.add(base);
+    for(let dx of [-1.55,1.55])for(let dz of [-1.55,1.55])
+      g.add(box(.06,.48,.06,0x333836,dx,.25,dz));
+    for(let dx of [-1.55,1.55])g.add(box(.035,.035,3.1,0x686e69,dx,.49,0));
+    for(let dz of [-1.55,1.55])g.add(box(3.1,.035,.035,0x686e69,0,.49,dz));
+  }
+  if(a)installArtwork(g,s,a);
+  else mountAvailableMarker(g,s);
+  objects.push({mesh:base,kind:a?'art':'spot',spot:s,art:a});
+}
 function geometryFor(a){let geo;if(a.shape==='sphere'){geo=new THREE.SphereGeometry(1.05,28+a.complexity*3,20+a.complexity*2)}else if(a.shape==='knot'){geo=new THREE.TorusKnotGeometry(.78,.27,60+a.complexity*15,8+a.complexity*2,2,3)}else if(a.shape==='column'){geo=new THREE.CylinderGeometry(.37,.78,2.2,8+a.complexity*2,12+a.complexity*2)}else{geo=new THREE.TorusGeometry(.9,.38,10+a.complexity*2,30+a.complexity*6)}
 const p=geo.attributes.position;for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);let n=1+Math.sin(x*3.8+y*4.3+z*2.9)*.14*a.distortion/100+Math.cos(x*6-z*4)*.15*a.distortion/100;p.setXYZ(i,x*n,y*n,z*n)}geo.computeVertexNormals();return geo}
 function artMesh(a,isWall=false){

@@ -82,6 +82,11 @@ export class MuseumGI {
 
   setupProxies(room,slots,artworks) {
     if(room==='gallery'){
+      // Interior partitions must take part in ray visibility and bounced light.
+      for(const x of [-6.5,7.5]){
+        for(const z of [-8.675,8.675])
+          this.addBox(x,3.85,z,.18,3.85,3.125,'#f0eee8');
+      }
       for(const s of slots) {
         const a=artworks.find(t=>t.spotId===s.id && Date.now()-t.createdAt < 14*86400000);
         if(s.type==='plinth')this.addBox(s.x,.45,s.z,1.17,.46,1.17,'#e3e0d9');

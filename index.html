@@ -6,7 +6,7 @@
 </style></head><body>
 <div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight"><button class="pill active" id="galleryBtn">GALLERY</button><button class="pill" id="depotBtn">DEPOT</button><button class="pill" id="giBtn" title="Cycle realtime global illumination quality">GI: HIGH</button><button class="pill" id="aboutBtn">ABOUT</button></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> global illumination<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">GLOBAL ILLUMINATION · LIVE</span></div></div>
 <div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">This first release is a playable prototype. Art is currently saved in this browser only; public cross-device publishing requires connecting a shared backend.</div><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
-<div class="overlay" id="editor"><div class="modal"><button class="close" data-close="editor">×</button><h1>Create an artwork</h1><p id="spotLabel">Selected exhibition space</p><p id="editorRule" class="notice">Choose your tools for this exhibition spot.</p><div class="tabrow"><button class="tab active" data-mode="painting">2D PAINTING</button><button class="tab" data-mode="sculpture">3D SCULPTURE</button><button class="tab" data-mode="voxel">VOXEL SCULPT</button></div><div class="editorGrid"><div><div id="paintPanel"><div class="toolrow" id="paintTools"><button data-tool="brush" class="selected">Brush</button><button data-tool="eraser">Eraser</button><button data-tool="line">Line</button><button data-tool="circle">Circle</button></div><canvas id="artCanvas" width="512" height="512"></canvas><p class="stat">Draw directly on the canvas. Exported as a framed gallery painting.</p></div><div id="sculptPanel" class="hidden"><div id="sculptView"></div><p class="stat" id="sculptHelp">Drag to orbit the sculpture. Procedural shapes can be recolored and customized.</p></div><div id="voxelPanel" class="hidden"><div class="toolrow"><button id="voxelAdd" class="selected">+ Add</button><button id="voxelRemove">− Remove</button><button id="voxelClear">Clear</button></div><p class="stat" id="voxelHelp">Click a face to grow your sculpture; remove individual voxels. Drag to rotate.</p><div id="voxelView" style="height:310px;background:#101415;border-radius:10px;overflow:hidden;touch-action:none"></div></div></div><div><label>Artist name</label><input id="artist" maxlength="60" placeholder="Your name" value="Anonymous Artist"><label>Artwork title</label><input id="artTitle" maxlength="100" placeholder="Untitled #1"><label>Description</label><textarea id="artDesc" maxlength="500" placeholder="Tell visitors about your work..."></textarea><div id="shapePanel" class="hidden"><label>Form</label><select id="shape"><option value="torus">Twisted Torus</option><option value="sphere">Organic Blob</option><option value="knot">Knot</option><option value="column">Abstract Column</option></select><label>Complexity</label><input class="range" id="complexity" type="range" min="1" max="9" value="5"><label>Distortion</label><input class="range" id="distortion" type="range" min="0" max="100" value="30"><div id="reliefControls" class="hidden"><label>Wall relief depth (always in front of wall)</label><input class="range" id="reliefDepth" type="range" min="10" max="100" value="65"></div></div><label>Material color</label><div id="swatches"></div><label>Brush size / voxel scale</label><input class="range" id="brushSize" type="range" min="2" max="54" value="13"><div class="notice">Exhibitions last 14 days, then automatically move to the Depot. Local prototype data stays on this device.</div><button class="btn" id="publish" style="width:100%">PLACE IN MUSEUM →</button></div></div></div></div>
+<div class="overlay" id="editor"><div class="modal"><button class="close" data-close="editor">×</button><h1>Create an artwork</h1><p id="spotLabel">Selected exhibition space</p><p id="editorRule" class="notice">Choose your tools for this exhibition spot.</p><div class="tabrow"><button class="tab active" data-mode="painting">2D PAINTING</button><button class="tab" data-mode="sculpture">3D SCULPTURE</button><button class="tab" data-mode="voxel">VOXEL SCULPT</button></div><div class="editorGrid"><div><div id="paintPanel"><div class="toolrow" id="paintTools"><button data-tool="brush" class="selected">Brush</button><button data-tool="eraser">Eraser</button><button data-tool="line">Line</button><button data-tool="circle">Circle</button></div><canvas id="artCanvas" width="512" height="512"></canvas><p class="stat">Draw directly on the canvas. Exported as a framed gallery painting.</p></div><div id="sculptPanel" class="hidden"><div id="sculptView"></div><p class="stat" id="sculptHelp">Drag to orbit the sculpture. Procedural shapes can be recolored and customized.</p></div><div id="voxelPanel" class="hidden"><div class="toolrow"><button id="voxelAdd" class="selected">+ Add</button><button id="voxelRemove">− Remove</button><button id="voxelClear">Clear</button></div><p class="stat" id="voxelHelp">Click a face to grow your sculpture; remove individual voxels. Drag to rotate.</p><div id="voxelView" style="height:310px;background:#101415;border-radius:10px;overflow:hidden;touch-action:none"></div></div></div><div><label>Artist name</label><input id="artist" maxlength="60" placeholder="Your name" value="Anonymous Artist"><label for="artTitle">Artwork title <span style="color:#d6fd68">*</span></label><input id="artTitle" maxlength="100" required aria-required="true" placeholder="Give your artwork a name"><label for="artDesc">Artwork description <span style="color:#d6fd68">*</span></label><textarea id="artDesc" maxlength="500" required aria-required="true" placeholder="Describe your artwork and what inspired it..."></textarea><div id="shapePanel" class="hidden"><label>Form</label><select id="shape"><option value="torus">Twisted Torus</option><option value="sphere">Organic Blob</option><option value="knot">Knot</option><option value="column">Abstract Column</option></select><label>Complexity</label><input class="range" id="complexity" type="range" min="1" max="9" value="5"><label>Distortion</label><input class="range" id="distortion" type="range" min="0" max="100" value="30"><div id="reliefControls" class="hidden"><label>Wall relief depth (always in front of wall)</label><input class="range" id="reliefDepth" type="range" min="10" max="100" value="65"></div></div><label>Material color</label><div id="swatches"></div><label>Brush size / voxel scale</label><input class="range" id="brushSize" type="range" min="2" max="54" value="13"><div class="notice">Exhibitions last 14 days, then automatically move to the Depot. Local prototype data stays on this device.</div><p class="stat" id="publishHint" aria-live="polite">Add a title and description to exhibit your artwork.</p><button class="btn" id="publish" style="width:100%" disabled>PLACE IN MUSEUM →</button></div></div></div></div>
 <div class="overlay" id="info"><div class="modal" style="max-width:540px"><button class="close" data-close="info">×</button><h1 id="infoTitle">Artwork</h1><p id="infoText"></p><button class="btn secondary" data-close="info">BACK TO MUSEUM</button></div></div>
 <div id="bootStatus" role="status" style="position:fixed;z-index:30;inset:0;display:grid;place-items:center;background:#101214;color:#d6fd68;text-align:center;padding:24px;font:700 20px system-ui">Loading MAD museum…</div>
 <script>
@@ -83,23 +83,95 @@ function artMesh(a,isWall=false){
   }
   return group;
 }
+// Small physical museum labels, with the original artist and description.
+function plaqueTexture(a) {
+  const canvas=document.createElement('canvas');
+  canvas.width=768;canvas.height=400;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#f4f1e8';ctx.fillRect(0,0,768,400);
+  ctx.fillStyle='#b3afa5';ctx.fillRect(0,0,10,400);
+  ctx.fillStyle='#6b716a';ctx.font='bold 19px Arial';
+  ctx.fillText('MAD  /  EXHIBITION LABEL',42,49);
+  const clip=(value,maxWidth)=>{
+    let text=String(value||'').trim();
+    while(text.length&&ctx.measureText(text).width>maxWidth)text=text.slice(0,-1);
+    return text.length<String(value||'').trim().length?text.replace(/\s+$/,'')+'…':text;
+  };
+  ctx.fillStyle='#19201e';ctx.font='bold 47px Arial';
+  ctx.fillText(clip(a.title||'Untitled',675),42,122);
+  ctx.fillStyle='#535d57';ctx.font='28px Arial';
+  ctx.fillText(clip('By '+(a.artist||'Anonymous Artist'),670),42,171);
+  ctx.fillStyle='#c7c6bb';ctx.fillRect(42,201,678,2);
+  const description=String(a.desc||'No description').trim().replace(/\s+/g,' ');
+  const words=description.split(' '),lines=[];
+  ctx.font='24px Arial';
+  let line='';
+  for(const word of words){
+    const next=line?line+' '+word:word;
+    if(ctx.measureText(next).width<=669){line=next;continue;}
+    if(line){lines.push(line);line=word}else{
+      let part=word;
+      while(part.length&&ctx.measureText(part).width>660)part=part.slice(0,-1);
+      lines.push(part+'…');line='';
+    }
+    if(lines.length>=2)break;
+  }
+  if(lines.length<2&&line)lines.push(line);
+  const remaining=lines.length>=2&&(words.join(' ').length>lines.join(' ').length);
+  if(remaining&&lines[1]){
+    while(lines[1].length&&ctx.measureText(lines[1]+'…').width>666)lines[1]=lines[1].slice(0,-1);
+    lines[1]+='…';
+  }
+  ctx.fillStyle='#323c37';
+  for(let i=0;i<Math.min(2,lines.length);i++)ctx.fillText(lines[i],42,258+i*37);
+  ctx.fillStyle='#858c85';ctx.font='18px Arial';
+  ctx.fillText('EXPLORE THE ARTWORK TO READ MORE',42,367);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.anisotropy=Math.min(8,renderer?.capabilities.getMaxAnisotropy?.()||1);
+  return texture;
+}
+function mountPlaque(g,s,a) {
+  const sign=new THREE.Group();
+  const plateWidth=s.type==='wall'?.94:1.0;
+  const plateHeight=plateWidth*400/768;
+  const backing=box(plateWidth+.035,plateHeight+.035,.035,0x343c38);
+  sign.add(backing);
+  const face=new THREE.Mesh(
+    new THREE.PlaneGeometry(plateWidth,plateHeight),
+    new THREE.MeshBasicMaterial({map:plaqueTexture(a),toneMapped:false})
+  );
+  face.position.z=.019;
+  sign.add(face);
+  if(s.type==='wall'){
+    // Beside the framed picture, on the exact same wall-facing plane.
+    sign.position.set(2.18,2.05,.18);
+  }else if(s.type==='plinth'){
+    // Flush-mounted on the front vertical face of the actual pedestal.
+    sign.position.set(0,.47,1.18);
+  }else{
+    // Floor works get a short inclined label stand OUTSIDE the low barrier.
+    const stand=box(.055,.30,.055,0x454d49,-1.08,.18,1.94);
+    const foot=box(.35,.035,.30,0x454d49,-1.08,.025,1.94);
+    g.add(stand,foot);
+    sign.position.set(-1.08,.37,1.94);
+    sign.rotation.x=-.58;
+  }
+  g.add(sign);
+}
 function installArtwork(g,s,a){
   const wall=s.type==='wall',mesh=artMesh(a,wall);
   if(wall){
     mesh.scale.setScalar(a.mode==='painting'?1:.8);
     mesh.position.set(0,3,a.mode==='voxel'?.265:.23);
-    // In local wall coordinates the visible face is behind z=.16.
-    // All relief vertices and all voxel cells stay strictly in front.
+    // Relief geometry is entirely in front of the wall.
   }else{
     mesh.position.y=s.type==='plinth'?2.15:1.5;
     mesh.scale.setScalar(s.type==='plinth'?.74:.94);
     if(a.mode==='painting')mesh.rotation.y=Math.PI;
   }
   g.add(mesh);
-  const sign=labelSprite(a.title||'Untitled',1.6);
-  if(wall)sign.position.set(2.1,2.3,.19);
-  else{sign.position.set(1.5,.9,1.1);sign.rotation.y=Math.PI/5;}
-  g.add(sign);
+  mountPlaque(g,s,a);
 }
 function makeDepotArt(a,i){
   const x=-14+(i%6)*5.5,z=-6+Math.floor(i/6)*5;
@@ -406,6 +478,18 @@ function selectEditorMode(nextMode){
 document.querySelectorAll('[data-mode]').forEach(b=>
   b.onclick=()=>selectEditorMode(b.dataset.mode));
 
+function artworkDetailsValid(){
+  return $('artTitle').value.trim().length>0&&$('artDesc').value.trim().length>0;
+}
+function updatePublishState(){
+  const valid=artworkDetailsValid();
+  $('publish').disabled=!valid;
+  $('publishHint').textContent=valid
+    ? 'Ready to exhibit — your title and description will appear on the museum label.'
+    : 'Required: give your artwork a title and description before placing it.';
+}
+$('artTitle').addEventListener('input',updatePublishState);
+$('artDesc').addEventListener('input',updatePublishState);
 function openEditor(){
   if(room==='depot'||!activeSpot)return;
   const wall=editingWall();
@@ -439,16 +523,23 @@ function openEditor(){
   resetVoxels();
   refreshSculpt();
   selectEditorMode(wall?'painting':'sculpture');
+  updatePublishState();
   show('editor');
 }
 $('publish').onclick=()=>{
   if(!activeSpot)return;
+  if(!artworkDetailsValid()){
+    updatePublishState();
+    toast('An artwork title and description are required before placing it.');
+    (!$('artTitle').value.trim() ? $('artTitle') : $('artDesc')).focus();
+    return;
+  }
   const wall=editingWall();
   const a={
     id:crypto.randomUUID(),spotId:activeSpot.id,
     mounting:activeSpot.type,
     artist:$('artist').value.trim()||'Anonymous Artist',
-    title:$('artTitle').value.trim()||'Untitled',
+    title:$('artTitle').value.trim(),
     desc:$('artDesc').value.trim(),
     mode,color,createdAt:Date.now(),
     shape:$('shape').value,complexity:+$('complexity').value,

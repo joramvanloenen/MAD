@@ -33,9 +33,14 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI q
 - `clay-sculpt.js`: 25³ signed-distance sculpting, vertex pigment, mesh extraction and LOD.
 - `wall-art.js`: nonpenetrating wall relief rules.
 - `museum-inspection.js`: orbitable close-up exhibit viewer.
-- `museum-audio.js`: gallery footsteps and ambient sound.
+- `museum-audio.js`: five locally hosted, recorded footsteps on wood, matched to distance walked (roughly 0.6 seconds between contacts at normal walking speed), gentle per-step pitch variation and short room reflections.
+- `museum-placement.js`: immutable gallery spot IDs, occupancy verification, and camera return to the exact newly filled spot.
 - `museum-store.js` and `mad-config.js`: optional shared Supabase data store.
 
 ## Known limitations
 
 This remains a prototype. Cloud credentials are not configured. Placement reservations are not transactional across visitors, clay mesh regeneration is CPU based, and the site still needs live multi-device QA, moderation workflows, mobile performance profiling, and additional accessibility work.
+
+## Footstep recording license
+
+The samples `assets/audio/footstep_wood_000.ogg` through `footstep_wood_004.ogg` come from **Kenney — Impact Sounds** (CC0 1.0 public domain dedication). They replace the former synthesized footsteps and are hosted inside MAD to avoid third-party hotlink dependencies. Original source: https://kenney.nl/assets/impact-sounds. The audio files were retrieved from the CC0 collection in https://github.com/iree-gd/iree.gd/tree/main/sample/assets/audio/impact. The music/ambient system is not affected by these clips.

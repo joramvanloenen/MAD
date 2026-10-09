@@ -645,7 +645,7 @@ $('paintPattern').onclick=()=>{
 };
 for(let c of colors){let b=document.createElement('button');b.className='swatch'+(c===color?' selected':'');b.style.background=c;b.title=c;b.onclick=()=>{color=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('selected',x===b));refreshSculpt()};$('swatches').append(b)}
 
-let sculptBase=null,sculptWall=null,voxelWall=null,voxelBase=null,clayField=null,clayMesh=null,clayTool='add',clayLast=0;
+let sculptBase=null,sculptWall=null,voxelWall=null,voxelBase=null,clayField=null,clayMesh=null,clayTool='add',clayLast=0,cachedVoxelCells=null;
 let sculptOrbitX=0,sculptOrbitY=0,voxelOrbitX=0,voxelOrbitY=0;
 const editingWall=()=>activeSpot?.type==='wall';
 const reliefDepth=()=>.08+(Number($('reliefDepth').value)/100)*.68;
@@ -706,7 +706,9 @@ function initSculpt(){
   });
   sculptRenderer.domElement.addEventListener('pointerup',()=>{drag=false;paintingClay=false});
   sculptRenderer.domElement.addEventListener('pointercancel',()=>{drag=false;paintingClay=false});
+  const ownRenderer=sculptRenderer;
   function render(){
+    if(sculptRenderer!==ownRenderer)return; // canceled when editor GPU context is released
     requestAnimationFrame(render);
     const r=$('sculptView').getBoundingClientRect();
     if(r.width>0&&r.height>0){
@@ -800,7 +802,10 @@ function initVoxels(){
   $('voxelView').append(voxelRenderer.domElement);
   voxelRenderer.domElement.style.width='100%';
   voxelRenderer.domElement.style.height='100%';
-  setVoxel(0,0,0);
+  voxels=new Map();
+  const restoreCells=cachedVoxelCells?.length?cachedVoxelCells:[[0,0,0]];
+  cachedVoxelCells=null;
+  for(const cell of restoreCells)setVoxel(...cell);
   let down=null;
   voxelRenderer.domElement.addEventListener('pointerdown',e=>{
     down={x:e.clientX,y:e.clientY,moved:false};
@@ -829,7 +834,9 @@ function initVoxels(){
     down=null;
   });
   voxelRenderer.domElement.addEventListener('pointercancel',()=>down=null);
+  const ownRenderer=voxelRenderer;
   function render(){
+    if(voxelRenderer!==ownRenderer)return;
     requestAnimationFrame(render);
     const r=$('voxelView').getBoundingClientRect();
     if(r.width>0&&r.height>0){
@@ -905,9 +912,74 @@ $('voxelRemove').onclick=()=>{
   $('voxelRemove').classList.add('selected');$('voxelAdd').classList.remove('selected');
 };
 $('voxelClear').onclick=resetVoxels;
+// Editors are expensive WebGL contexts. Do not open either until needed,
+// and keep only ONE editing context alive alongside the museum on mobile.
+function releaseEditorRenderer(kind){
+  if(kind==='sculpture' && sculptRenderer){
+    sculptRenderer.dispose();
+    sculptRenderer.forceContextLoss();
+    sculptRenderer.domElement.remove();
+    sculptRenderer=null;
+    sculptScene=null;sculptMesh=null;clayMesh=null;
+    sculptWall=null;sculptBase=null;sculptCam=null;
+  }
+  if(kind==='voxel' && voxelRenderer){
+    cachedVoxelCells=[...voxels.values()].map(mesh=>mesh.userData.grid.slice());
+    voxelRenderer.dispose();
+    voxelRenderer.forceContextLoss();
+    voxelRenderer.domElement.remove();
+    voxelRenderer=null;voxelScene=null;voxelRoot=null;
+    voxelWall=null;voxelBase=null;voxelCam=null;
+    voxels=new Map();
+  }
+}
+function updateEditorStages(){
+  const wall=editingWall();
+  if(sculptWall && sculptBase && sculptCam){
+    sculptWall.visible=wall;
+    sculptWall.userData.trim.visible=wall;
+    sculptBase.visible=!wall;
+    sculptBase.scale.y=activeSpot?.type==='plinth'?6:1;
+    sculptBase.position.y=activeSpot?.type==='plinth'?-1.48:-1.15;
+    if(wall)sculptCam.position.set(.35,.25,4.7);
+    else sculptCam.position.set(3,2.4,4.2);
+    sculptCam.lookAt(0,0,wall?.25:0);
+  }
+  if(voxelWall && voxelBase && voxelCam){
+    voxelWall.visible=wall;
+    voxelBase.visible=!wall;
+    voxelBase.scale.set(.32,activeSpot?.type==='plinth'?8:1,.32);
+    voxelBase.position.y=activeSpot?.type==='plinth'?-.9:-.55;
+    voxelCam.position.set(wall?.8:5,wall?.5:4,wall?10:6);
+    voxelCam.lookAt(0,0,0);
+  }
+}
 function selectEditorMode(nextMode){
   mode=nextMode;
+  if(nextMode==='voxel'){
+    if(MOBILE_SAFE)releaseEditorRenderer('sculpture');
+    if(!voxelRenderer)initVoxels();
+  }else if(nextMode==='sculpture'||nextMode==='clay'){
+    if(MOBILE_SAFE)releaseEditorRenderer('voxel');
+    if(!sculptRenderer)initSculpt();
+    if(nextMode==='clay'&&clayField&&!clayMesh)refreshClayMesh();
+  }
+  updateEditorStages();
+  if(sculptMesh)sculptMesh.visible=mode==='sculpture';
+  if(clayMesh)clayMesh.visible=mode==='clay';
   document.querySelectorAll('[data-mode]').forEach(b=>
+    b.classList.toggle('active',b.dataset.mode===mode));
+  $('paintPanel').classList.toggle('hidden',mode!=='painting');
+  $('sculptPanel').classList.toggle('hidden',mode!=='sculpture'&&mode!=='clay');
+  $('clayTools').classList.toggle('hidden',mode!=='clay');
+  if(mode==='clay')$('sculptHelp').textContent='Brush directly onto the smooth volumetric surface. The mesh updates as you sculpt and uses distance-based LOD in the museum.';
+  $('voxelPanel').classList.toggle('hidden',mode!=='voxel');
+  $('shapePanel').classList.toggle('hidden',mode!=='sculpture');
+  $('paintingOptions').classList.toggle('hidden',mode!=='painting');
+  $('sculptureOptions').classList.toggle('hidden',mode==='painting');
+  $('reliefControls').classList.toggle('hidden',!editingWall()||mode!=='sculpture');
+}
+document.querySelectorAll('[data-mode]').forEach(b=>
     b.classList.toggle('active',b.dataset.mode===mode));
   $('paintPanel').classList.toggle('hidden',mode!=='painting');
   $('sculptPanel').classList.toggle('hidden',mode!=='sculpture'&&mode!=='clay');
@@ -952,27 +1024,12 @@ function openEditor(){
   $('voxelHelp').textContent=wall
     ? 'Click the wall to add your first layer. Click exposed faces to build outward. The back wall is solid; placing voxels behind it is forbidden. Drag to inspect from the front and sides.'
     : 'Click a face to add a voxel, or remove voxels. Drag to orbit your sculpture.';
-  sculptWall.visible=wall;
-  sculptWall.userData.trim.visible=wall;
-  sculptBase.visible=!wall;
-  sculptBase.scale.y=activeSpot.type==='plinth'?6:1;
-  sculptBase.position.y=activeSpot.type==='plinth'?-1.48:-1.15;
-  voxelWall.visible=wall;
-  voxelBase.visible=!wall;
-  voxelBase.scale.set(.32,activeSpot.type==='plinth'?8:1,.32);
-  voxelBase.position.y=activeSpot.type==='plinth'?-.9:-.55;
-  sculptOrbitX=0;sculptOrbitY=0;
-  voxelOrbitX=0;voxelOrbitY=0;
-  if(wall){
-    sculptCam.position.set(.35,.25,4.7);sculptCam.lookAt(0,0,.25);
-    voxelCam.position.set(.8,.5,10);voxelCam.lookAt(0,0,0);
-  }else{
-    sculptCam.position.set(3,2.4,4.2);sculptCam.lookAt(0,0,0);
-    voxelCam.position.set(5,4,6);voxelCam.lookAt(0,.2,0);
-  }
-  resetVoxels();
-  refreshSculpt();
+  // Reset per-artwork state without initializing any editor GPU contexts.
+  cachedVoxelCells=null;
+  if(voxelRenderer)resetVoxels();
+  if(sculptRenderer)refreshSculpt();
   resetClay();
+  sculptOrbitX=0;sculptOrbitY=0;voxelOrbitX=0;voxelOrbitY=0;
   selectEditorMode(wall?'painting':'sculpture');
   updatePublishState();
   show('editor');

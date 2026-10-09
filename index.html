@@ -41,7 +41,7 @@ const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   new URLSearchParams(location.search).has('safe');
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
-let scene,camera,renderer,gi=null,environment=null,inspector=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
+let scene,camera,renderer,gi=null,environment=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
 $('cloudStatus').textContent=museumStore.enabled?'CLOUD · REVIEWED':'LOCAL ONLY';
 $('syncBtn').classList.toggle('hidden',!museumStore.enabled);
@@ -91,6 +91,102 @@ function showRenderError(message){
   });
   content.append(heading,description,retry);el.append(content);
 }
+// Architectural archive entrance. The east perimeter wall has an actual
+// 3.2m x 3.45m opening; all of these parts fit INSIDE its 45cm thickness.
+function createModernDepotDoor(){
+  const group=new THREE.Group();
+  scene.add(group);
+  const dark=new THREE.MeshStandardMaterial({color:0x303938,roughness:.39,metalness:.42});
+  const edge=new THREE.MeshStandardMaterial({color:0x89908b,roughness:.36,metalness:.74});
+  const black=new THREE.MeshStandardMaterial({color:0x1e292b,roughness:.45,metalness:.24});
+  const warmMetal=new THREE.MeshStandardMaterial({color:0xc1b7a6,roughness:.27,metalness:.85});
+  const glass=new THREE.MeshPhysicalMaterial({
+    color:0x9eadae,roughness:.13,metalness:.04,transparent:true,
+    opacity:.57,depthWrite:false,side:THREE.DoubleSide
+  });
+  const add=(w,h,d,material,x,y,z)=>{
+    const mesh=box(w,h,d,0xffffff,x,y,z,material);
+    group.add(mesh);return mesh;
+  };
+  // Shadowed masonry reveals: flush with the surrounding plasterwork.
+  const reveal=new THREE.MeshStandardMaterial({color:room==='gallery'?0xe7e4dc:0xc2c3bb,roughness:.92});
+  for(const z of [-1.59,1.59])add(.45,3.40,.075,reveal,19.49,1.70,z);
+  add(.45,.09,3.20,reveal,19.49,3.41,0);
+  add(.44,.025,3.12,edge,19.49,.014,0);
+  // Powder-coated frame sits just behind the wall's inside face (X=19.275).
+  for(const z of [-1.51,1.51])add(.095,3.32,.085,edge,19.34,1.68,z);
+  add(.095,.09,3.10,edge,19.34,3.295,0);
+  add(.095,.065,3.10,edge,19.34,.075,0);
+  add(.075,3.14,.078,edge,19.35,1.67,.61); // sidelight mullion
+
+  // Door swings around its actual hinge; panel and pull handle rotate together.
+  depotDoorLeaf=new THREE.Group();
+  depotDoorLeaf.position.set(19.46,0,-1.405);
+  group.add(depotDoorLeaf);
+  const leaf=(w,h,d,material,x,y,z)=>{
+    const mesh=box(w,h,d,0xffffff,x,y,z,material);
+    depotDoorLeaf.add(mesh);return mesh;
+  };
+  leaf(.105,3.08,1.96,dark,0,1.635,.98);
+  // Fine perimeter joinery, with a subtly darker inset central field.
+  leaf(.016,2.84,1.74,black,-.062,1.635,.98);
+  leaf(.018,2.73,1.63,dark,-.073,1.64,.98);
+  leaf(.017,3.00,.035,edge,-.066,1.635,.08);
+  leaf(.017,3.00,.035,edge,-.066,1.635,1.89);
+  // Long satin metal bar pull, deliberately proud of the door face.
+  leaf(.15,.034,.043,warmMetal,-.132,1.30,1.72);
+  leaf(.15,.034,.043,warmMetal,-.132,1.95,1.72);
+  leaf(.041,.76,.043,warmMetal,-.205,1.625,1.72);
+  // Hidden hinges and discrete kickplate.
+  for(const y of [.42,2.72])leaf(.055,.18,.048,edge,-.088,y,.09);
+  leaf(.018,.26,1.7,edge,-.078,.34,.97);
+
+  // Narrow smoked-glass sidelight, with a dark recess behind it for depth.
+  add(.045,3.05,.79,black,19.665,1.63,1.05);
+  add(.024,3.05,.79,glass,19.47,1.63,1.05);
+  add(.06,3.07,.033,edge,19.435,1.63,.65);
+  add(.06,3.07,.033,edge,19.435,1.63,1.44);
+  for(const z of [.78,1.00,1.22])add(.025,2.82,.011,edge,19.56,1.63,z);
+
+  // Directional gallery signage mounted to the plaster lintel.
+  const canvas=document.createElement('canvas');
+  canvas.width=1024;canvas.height=180;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,1024,180);
+  ctx.fillStyle=room==='gallery'?'#424845':'#535a56';
+  ctx.textAlign='center';
+  ctx.font='bold 60px Arial';
+  ctx.fillText(room==='gallery'?'MAD  /  DEPOT':'MAD  /  GALLERY',512,100);
+  ctx.font='30px Arial';
+  ctx.fillStyle='#888f8a';
+  ctx.fillText(room==='gallery'?'PERMANENT COLLECTION  →':'←  CURRENT EXHIBITIONS',512,151);
+  const signTexture=new THREE.CanvasTexture(canvas);
+  signTexture.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.55,.45),
+    new THREE.MeshBasicMaterial({map:signTexture,transparent:true,depthWrite:false})
+  );
+  sign.rotation.y=-Math.PI/2;
+  sign.position.set(19.20,3.93,0);
+  group.add(sign);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(.035,.045,2.15),
+    new THREE.MeshBasicMaterial({color:0xe5c8a2}));
+  strip.position.set(19.23,3.515,0);group.add(strip);
+
+  // Invisible pick volume is exactly inside the doorway and in front of
+  // the leaf. It remains raycastable without drawing an extra rectangle.
+  const trigger=new THREE.Mesh(
+    new THREE.BoxGeometry(.035,3.12,3.02),
+    new THREE.MeshBasicMaterial({
+      color:0xffffff,transparent:true,opacity:0,depthWrite:false,
+      colorWrite:false
+    })
+  );
+  trigger.position.set(19.245,1.63,0);
+  trigger.castShadow=false;
+  group.add(trigger);
+  return trigger;
+}
 function createRoom(){
   if(gi){gi.dispose();gi=null}
   if(environment){environment.dispose();environment=null}
@@ -120,15 +216,16 @@ function createRoom(){
   renderer.domElement.addEventListener('webglcontextrestored',()=>location.reload());
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio,MOBILE_SAFE?.9:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
-for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],[.45,24,19.5,0]]){scene.add(box(w,8,d,mat,x,4,z));}
+// The east wall is physically divided around the archive door.
+for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],
+  [.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]]){
+  scene.add(box(w,8,d,mat,x,4,z));
+}
+// Solid lintel above the 3.45m tall opening.
+scene.add(box(.45,8-3.45,3.2,mat,19.5,(8+3.45)/2,0));
 scene.add(box(39,.3,24,0xd0d0c9,0,8,0));
 environment=buildMuseumEnvironment(scene,room,{quality:MOBILE_SAFE?'eco':'high'});
-const gate=box(.12,2.85,3.1,0xffffff,18.52,1.43,0);
-gate.material.transparent=true;gate.material.opacity=0;gate.material.depthWrite=false;gate.castShadow=false;scene.add(gate);
-for(const z of [-1.68,1.68])scene.add(box(.24,3.25,.22,0xe4e3dc,18.55,1.63,z));
-scene.add(box(.24,.25,3.58,0xe4e3dc,18.55,3.28,0));
-const gateSign=labelSprite(room==='gallery'?'DEPOT  →':'←  GALLERY',1.75);
-gateSign.position.set(18.26,2.85,0);gateSign.rotation.y=-Math.PI/2;scene.add(gateSign);
+const gate=createModernDepotDoor();
 objects.push({mesh:gate,kind:'portal'});
 artGroup=new THREE.Group();scene.add(artGroup);
 if(room==='gallery'){for(let s of slots)makeSpot(s)}else{artworks.filter(a=>expired(a)).forEach((a,i)=>makeDepotArt(a,i));}
@@ -185,7 +282,7 @@ function mountAvailableMarker(g,s){
   sign.add(face);
   if(s.type==='wall'){
     // Mount low on the artwork's wall panel, not in the empty artwork area.
-    sign.position.set(1.02,1.53,.178);
+    sign.position.set(1.04,1.32,.106);
   }else if(s.type==='plinth'){
     // A small plaque flush with the plinth's visitor-facing side.
     sign.position.set(0,.47,1.166);
@@ -203,10 +300,25 @@ function makeSpot(s){
   const g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=s.rot;artGroup.add(g);
   const a=spotArt(s.id);let base;
   if(s.type==='wall'){
-    // Flush, unobtrusive interaction surface, matching the real plaster wall.
-    // Artist-designed frames are the only visible frames.
+    // Subtle exhibition reserve panel: warmer than the plaster, never a
+    // large status billboard. When occupied, the panel disappears.
     base=box(3.35,3.45,.12,0xf1f0ea,0,3,0);
     g.add(base);
+    if(!a){
+      const reservedMat=new THREE.MeshStandardMaterial({
+        color:0xe3ddd2,roughness:.94,metalness:0
+      });
+      const edgeMat=new THREE.MeshStandardMaterial({
+        color:0xbfb7aa,roughness:.84,metalness:.06
+      });
+      const display=box(3.07,3.10,.028,0xe3ddd2,0,3,.079,reservedMat);
+      g.add(display);
+      const e=.014,z=.098;
+      g.add(box(3.10,e,.012,0xbfb7aa,0,4.555,z,edgeMat));
+      g.add(box(3.10,e,.012,0xbfb7aa,0,1.445,z,edgeMat));
+      g.add(box(e,3.10,.012,0xbfb7aa,-1.55,3,z,edgeMat));
+      g.add(box(e,3.10,.012,0xbfb7aa,1.55,3,z,edgeMat));
+    }
   }
   if(s.type==='plinth'){
     base=box(2.3,.9,2.3,0xe4e4dc,0,.45,0);
@@ -334,9 +446,25 @@ function interact(){
   if(!interactTarget)return;
   const o=interactTarget;
   if(o.kind==='portal'){
-    room=room==='gallery'?'depot':'gallery';
-    objects=[];createRoom();
-    toast(room==='depot'?'Welcome to the Depot':'Welcome to the Gallery');
+    if(doorTransitioning)return;
+    doorTransitioning=true;
+    const initialLeaf=depotDoorLeaf;
+    const began=performance.now();
+    const animateDoor=(now)=>{
+      if(initialLeaf!==depotDoorLeaf)return;
+      const t=clamp((now-began)/390,0,1);
+      initialLeaf.rotation.y=-1.13*(1-Math.pow(1-t,3));
+      if(t<1){requestAnimationFrame(animateDoor);return}
+      setTimeout(()=>{
+        room=room==='gallery'?'depot':'gallery';
+        objects=[];createRoom();
+        camera.position.set(16.75,1.7,0);
+        yaw=Math.PI/2;pitch=0;camera.rotation.set(0,yaw,0);
+        doorTransitioning=false;
+        toast(room==='depot'?'Welcome to the Depot':'Welcome to the Gallery');
+      },100);
+    };
+    requestAnimationFrame(animateDoor);
     return;
   }
   if(o.kind==='spot'){activeSpot=o.spot;openEditor();return;}

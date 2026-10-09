@@ -182,12 +182,230 @@ const artCanvas=$('artCanvas'),ctx=artCanvas.getContext('2d');ctx.fillStyle='#f8
 function canvasPos(e){let r=artCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*512,y:(e.clientY-r.top)/r.height*512}}function stroke(a,b){ctx.strokeStyle=paintTool==='eraser'?'#f8f6ef':color;ctx.lineWidth=+$('brushSize').value;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
 artCanvas.addEventListener('pointerdown',e=>{painting=true;artCanvas.setPointerCapture(e.pointerId);origin=canvasPos(e);if(paintTool==='brush'||paintTool==='eraser')stroke(origin,{x:origin.x+.001,y:origin.y+.001})});artCanvas.addEventListener('pointermove',e=>{if(!painting)return;let p=canvasPos(e);if(['brush','eraser'].includes(paintTool)){stroke(origin,p);origin=p}});artCanvas.addEventListener('pointerup',e=>{if(!painting)return;let p=canvasPos(e);if(paintTool==='line')stroke(origin,p);if(paintTool==='circle'){ctx.strokeStyle=color;ctx.lineWidth=+$('brushSize').value;ctx.beginPath();ctx.ellipse((p.x+origin.x)/2,(p.y+origin.y)/2,Math.max(1,Math.abs(p.x-origin.x)/2),Math.max(1,Math.abs(p.y-origin.y)/2),0,0,Math.PI*2);ctx.stroke()}painting=false});document.querySelectorAll('#paintTools button').forEach(b=>b.onclick=()=>{paintTool=b.dataset.tool;document.querySelectorAll('#paintTools button').forEach(x=>x.classList.toggle('selected',x===b))});
 for(let c of colors){let b=document.createElement('button');b.className='swatch'+(c===color?' selected':'');b.style.background=c;b.title=c;b.onclick=()=>{color=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('selected',x===b));refreshSculpt()};$('swatches').append(b)}
-function initSculpt(){sculptScene=new THREE.Scene();sculptScene.background=new THREE.Color('#121819');sculptCam=new THREE.PerspectiveCamera(50,1,.1,100);sculptCam.position.set(3,2.4,4.2);sculptCam.lookAt(0,0,0);sculptScene.add(new THREE.HemisphereLight(0xffffff,0x606a71,2.3));let light=new THREE.DirectionalLight(0xffffff,2.6);light.position.set(3,6,5);sculptScene.add(light);sculptRenderer=new THREE.WebGLRenderer({antialias:true,alpha:false});sculptRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));$('sculptView').append(sculptRenderer.domElement);sculptRenderer.domElement.style.width='100%';sculptRenderer.domElement.style.height='100%';const base=box(2.6,.15,2.6,0x777e79,0,-1.5,0);sculptScene.add(base);refreshSculpt();let drag=false,lastX=0,lastY=0;sculptRenderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY;sculptRenderer.domElement.setPointerCapture(e.pointerId)});sculptRenderer.domElement.addEventListener('pointermove',e=>{if(!drag||!sculptMesh)return;sculptMesh.rotation.y+=(e.clientX-lastX)*.009;sculptMesh.rotation.x=clamp(sculptMesh.rotation.x+(e.clientY-lastY)*.008,-1.3,1.3);lastX=e.clientX;lastY=e.clientY});sculptRenderer.domElement.addEventListener('pointerup',()=>drag=false);function render(){requestAnimationFrame(render);if(!sculptRenderer)return;const r=$('sculptView').getBoundingClientRect();if(r.width>0){sculptRenderer.setSize(r.width,r.height,false);sculptCam.aspect=r.width/r.height;sculptCam.updateProjectionMatrix();sculptRenderer.render(sculptScene,sculptCam)}}render()}
-function refreshSculpt(){if(!sculptScene)return;if(sculptMesh){sculptScene.remove(sculptMesh);sculptMesh.geometry.dispose();sculptMesh.material.dispose()}sculptMesh=new THREE.Mesh(geometryFor({shape:$('shape').value,complexity:+$('complexity').value,distortion:+$('distortion').value}),new THREE.MeshStandardMaterial({color,roughness:.38,metalness:.18}));sculptScene.add(sculptMesh)}['shape','complexity','distortion'].forEach(id=>$(id).addEventListener('input',refreshSculpt));
-function initVoxels(){voxelScene=new THREE.Scene();voxelScene.background=new THREE.Color('#121819');voxelCam=new THREE.PerspectiveCamera(48,1,.1,100);voxelCam.position.set(5,4,6);voxelCam.lookAt(0,.2,0);voxelScene.add(new THREE.HemisphereLight(0xffffff,0x555d66,2.4));const light=new THREE.DirectionalLight(0xffffff,2.5);light.position.set(4,8,5);voxelScene.add(light);voxelRoot=new THREE.Group();voxelScene.add(voxelRoot);voxelRenderer=new THREE.WebGLRenderer({antialias:true});voxelRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));$('voxelView').append(voxelRenderer.domElement);voxelRenderer.domElement.style.width='100%';voxelRenderer.domElement.style.height='100%';setVoxel(0,0,0);let down=null;voxelRenderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};voxelRenderer.domElement.setPointerCapture(e.pointerId)});voxelRenderer.domElement.addEventListener('pointermove',e=>{if(!down)return;let dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>3){voxelCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),-dx*.008);voxelCam.position.y=clamp(voxelCam.position.y+dy*.012,1,9);voxelCam.lookAt(0,0,0);down={x:e.clientX,y:e.clientY,moved:true}}});voxelRenderer.domElement.addEventListener('pointerup',e=>{if(!down)return;if(!down.moved){let r=voxelRenderer.domElement.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1),raycaster=new THREE.Raycaster();raycaster.setFromCamera(mouse,voxelCam);let hits=raycaster.intersectObjects([...voxels.values()]);if(hits.length){let m=hits[0].object,parts=m.userData.grid;if(voxelRemove){if(voxels.size>1)deleteVoxel(...parts)}else{let normal=hits[0].face.normal.clone().transformDirection(m.matrixWorld).round(),p=parts.map((v,i)=>v+normal.getComponent(i));if(p.every(n=>Math.abs(n)<11))setVoxel(...p);else toast('Voxel limit reached')}}}down=null});function render(){requestAnimationFrame(render);const r=$('voxelView').getBoundingClientRect();if(r.width){voxelRenderer.setSize(r.width,r.height,false);voxelCam.aspect=r.width/r.height;voxelCam.updateProjectionMatrix();voxelRenderer.render(voxelScene,voxelCam)}}render()}
-function setVoxel(x,y,z){let k=[x,y,z].join(',');if(voxels.has(k)||voxels.size>2800)return;const mesh=box(.985,.985,.985,color,x,y,z);mesh.userData.grid=[x,y,z];voxelRoot.add(mesh);voxels.set(k,mesh)}function deleteVoxel(x,y,z){let k=[x,y,z].join(',');let m=voxels.get(k);if(m){voxelRoot.remove(m);m.geometry.dispose();m.material.dispose();voxels.delete(k)}}
-$('voxelAdd').onclick=()=>{voxelRemove=false;$('voxelAdd').classList.add('selected');$('voxelRemove').classList.remove('selected')};$('voxelRemove').onclick=()=>{voxelRemove=true;$('voxelRemove').classList.add('selected');$('voxelAdd').classList.remove('selected')};$('voxelClear').onclick=()=>{for(let m of voxels.values()){voxelRoot.remove(m);m.geometry.dispose();m.material.dispose()}voxels.clear();setVoxel(0,0,0)};
-document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));$('paintPanel').classList.toggle('hidden',mode!=='painting');$('sculptPanel').classList.toggle('hidden',mode!=='sculpture');$('voxelPanel').classList.toggle('hidden',mode!=='voxel');$('shapePanel').classList.toggle('hidden',mode!=='sculpture')});
+
+let sculptBase=null,sculptWall=null,voxelWall=null,voxelBase=null;
+let sculptOrbitX=0,sculptOrbitY=0,voxelOrbitX=0,voxelOrbitY=0;
+const editingWall=()=>activeSpot?.type==='wall';
+const reliefDepth=()=>.08+(Number($('reliefDepth').value)/100)*.68;
+
+function initSculpt(){
+  sculptScene=new THREE.Scene();
+  sculptScene.background=new THREE.Color('#121819');
+  sculptCam=new THREE.PerspectiveCamera(50,1,.1,100);
+  sculptCam.position.set(3,2.4,4.2);sculptCam.lookAt(0,0,0);
+  sculptScene.add(new THREE.HemisphereLight(0xffffff,0x606a71,2.3));
+  const light=new THREE.DirectionalLight(0xffffff,2.6);light.position.set(3,6,5);sculptScene.add(light);
+  sculptRenderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+  sculptRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  $('sculptView').append(sculptRenderer.domElement);
+  sculptRenderer.domElement.style.width='100%';
+  sculptRenderer.domElement.style.height='100%';
+  sculptBase=box(2.6,.15,2.6,0x777e79,0,-1.5,0);
+  sculptScene.add(sculptBase);
+  // Real wall with its exposed face exactly at Z=0 (behind the relief).
+  sculptWall=box(3.5,3.5,.24,0xd3d6d0,0,0,-.12);
+  sculptWall.visible=false;
+  sculptScene.add(sculptWall);
+  const wallTrim=new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(3.5,3.5,.24)),
+    new THREE.LineBasicMaterial({color:0x8e9690})
+  );
+  wallTrim.position.copy(sculptWall.position);
+  sculptWall.add(); // Wall geometry remains static while the inspection camera orbits.
+  sculptScene.add(wallTrim);
+  sculptWall.userData.trim=wallTrim;
+  wallTrim.visible=false;
+  refreshSculpt();
+  let drag=false,lastX=0,lastY=0;
+  sculptRenderer.domElement.addEventListener('pointerdown',e=>{
+    drag=true;lastX=e.clientX;lastY=e.clientY;
+    sculptRenderer.domElement.setPointerCapture(e.pointerId);
+  });
+  sculptRenderer.domElement.addEventListener('pointermove',e=>{
+    if(!drag||!sculptMesh)return;
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    if(editingWall()){
+      // Orbit the CAMERA. Rotating the sculpture could push it through its wall.
+      sculptOrbitX=clamp(sculptOrbitX+dx*.007,-.95,.95);
+      sculptOrbitY=clamp(sculptOrbitY+dy*.007,-.55,.55);
+      sculptCam.position.set(4.7*Math.sin(sculptOrbitX),
+        3*Math.sin(sculptOrbitY),4.7*Math.cos(sculptOrbitX));
+      sculptCam.lookAt(0,0,.26);
+    }else{
+      sculptMesh.rotation.y+=dx*.009;
+      sculptMesh.rotation.x=clamp(sculptMesh.rotation.x+dy*.008,-1.3,1.3);
+    }
+    lastX=e.clientX;lastY=e.clientY;
+  });
+  sculptRenderer.domElement.addEventListener('pointerup',()=>drag=false);
+  sculptRenderer.domElement.addEventListener('pointercancel',()=>drag=false);
+  function render(){
+    requestAnimationFrame(render);
+    const r=$('sculptView').getBoundingClientRect();
+    if(r.width>0&&r.height>0){
+      sculptRenderer.setSize(r.width,r.height,false);
+      sculptCam.aspect=r.width/r.height;
+      sculptCam.updateProjectionMatrix();
+      sculptRenderer.render(sculptScene,sculptCam);
+    }
+  }
+  render();
+}
+function refreshSculpt(){
+  if(!sculptScene)return;
+  if(sculptMesh){
+    sculptScene.remove(sculptMesh);
+    sculptMesh.geometry.dispose();sculptMesh.material.dispose();
+  }
+  const a={shape:$('shape').value,complexity:+$('complexity').value,distortion:+$('distortion').value};
+  const geo=geometryFor(a);
+  if(editingWall())constrainReliefGeometry(geo,reliefDepth());
+  sculptMesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({
+    color,roughness:.38,metalness:.18,side:THREE.DoubleSide
+  }));
+  sculptScene.add(sculptMesh);
+}
+['shape','complexity','distortion','reliefDepth'].forEach(id=>$(id).addEventListener('input',refreshSculpt));
+
+function initVoxels(){
+  voxelScene=new THREE.Scene();
+  voxelScene.background=new THREE.Color('#121819');
+  voxelCam=new THREE.PerspectiveCamera(48,1,.1,100);
+  voxelCam.position.set(5,4,6);voxelCam.lookAt(0,.2,0);
+  voxelScene.add(new THREE.HemisphereLight(0xffffff,0x555d66,2.4));
+  const light=new THREE.DirectionalLight(0xffffff,2.5);
+  light.position.set(4,8,5);voxelScene.add(light);
+  voxelRoot=new THREE.Group();voxelScene.add(voxelRoot);
+  // A visible, solid edit boundary. Its front face is Z=-0.5:
+  // voxels centered at Z=0 have their rear faces at exactly Z=-0.5.
+  voxelWall=box(9.7,9.7,.24,0xd3d7d0,0,0,-.62);
+  voxelWall.visible=false;
+  voxelScene.add(voxelWall);
+  voxelBase=box(9.7,.1,9.7,0x8a918d,0,-2.5,0);
+  voxelScene.add(voxelBase);
+  voxelRenderer=new THREE.WebGLRenderer({antialias:true});
+  voxelRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  $('voxelView').append(voxelRenderer.domElement);
+  voxelRenderer.domElement.style.width='100%';
+  voxelRenderer.domElement.style.height='100%';
+  setVoxel(0,0,0);
+  let down=null;
+  voxelRenderer.domElement.addEventListener('pointerdown',e=>{
+    down={x:e.clientX,y:e.clientY,moved:false};
+    voxelRenderer.domElement.setPointerCapture(e.pointerId);
+  });
+  voxelRenderer.domElement.addEventListener('pointermove',e=>{
+    if(!down)return;
+    const dx=e.clientX-down.x,dy=e.clientY-down.y;
+    if(Math.hypot(dx,dy)>2){
+      if(editingWall()){
+        voxelOrbitX=clamp(voxelOrbitX+dx*.007,-.95,.95);
+        voxelOrbitY=clamp(voxelOrbitY+dy*.007,-.5,.5);
+        voxelCam.position.set(10*Math.sin(voxelOrbitX),
+          7*Math.sin(voxelOrbitY),10*Math.cos(voxelOrbitX));
+      }else{
+        voxelCam.position.applyAxisAngle(new THREE.Vector3(0,1,0),-dx*.008);
+        voxelCam.position.y=clamp(voxelCam.position.y+dy*.012,1,9);
+      }
+      voxelCam.lookAt(0,0,0);
+      down.x=e.clientX;down.y=e.clientY;down.moved=true;
+    }
+  });
+  voxelRenderer.domElement.addEventListener('pointerup',e=>{
+    if(!down)return;
+    if(!down.moved)editVoxelAt(e);
+    down=null;
+  });
+  voxelRenderer.domElement.addEventListener('pointercancel',()=>down=null);
+  function render(){
+    requestAnimationFrame(render);
+    const r=$('voxelView').getBoundingClientRect();
+    if(r.width>0&&r.height>0){
+      voxelRenderer.setSize(r.width,r.height,false);
+      voxelCam.aspect=r.width/r.height;
+      voxelCam.updateProjectionMatrix();
+      voxelRenderer.render(voxelScene,voxelCam);
+    }
+  }
+  render();
+}
+function editVoxelAt(e){
+  const r=voxelRenderer.domElement.getBoundingClientRect();
+  const mouse=new THREE.Vector2((e.clientX-r.left)/r.width*2-1,
+    -((e.clientY-r.top)/r.height)*2+1);
+  const raycaster=new THREE.Raycaster();
+  raycaster.setFromCamera(mouse,voxelCam);
+  const targets=[...voxels.values()];
+  if(editingWall())targets.push(voxelWall);
+  const hits=raycaster.intersectObjects(targets,false);
+  if(!hits.length)return;
+  const hit=hits[0];
+  if(hit.object===voxelWall){
+    if(voxelRemove)return;
+    const x=clamp(Math.round(hit.point.x),-4,4);
+    const y=clamp(Math.round(hit.point.y),-4,4);
+    if(!setVoxel(x,y,0))toast('This area is already occupied or outside the wall.');
+    return;
+  }
+  const parts=hit.object.userData.grid;
+  if(voxelRemove){
+    if(voxels.size>1)deleteVoxel(...parts);
+    else toast('Keep at least one voxel in your artwork.');
+    return;
+  }
+  const n=hit.face.normal.clone().transformDirection(hit.object.matrixWorld).round();
+  const p=parts.map((v,i)=>v+n.getComponent(i));
+  if(!setVoxel(...p))toast(editingWall()
+    ? 'Wall boundary: voxels may only grow outward, never through or beyond the wall.'
+    : 'Voxel sculpt limit reached.');
+}
+function setVoxel(x,y,z){
+  if(editingWall()){
+    if(!wallVoxelAllowed(x,y,z))return false;
+  }else if([x,y,z].some(n=>Math.abs(n)>10))return false;
+  if(voxels.size>=2800)return false;
+  const k=[x,y,z].join(',');
+  if(voxels.has(k))return false;
+  const mesh=box(.985,.985,.985,color,x,y,z);
+  mesh.userData.grid=[x,y,z];
+  voxelRoot.add(mesh);voxels.set(k,mesh);
+  return true;
+}
+function deleteVoxel(x,y,z){
+  const k=[x,y,z].join(','),m=voxels.get(k);
+  if(!m)return;
+  voxelRoot.remove(m);
+  m.geometry.dispose();m.material.dispose();
+  voxels.delete(k);
+}
+function resetVoxels(){
+  for(const m of voxels.values()){
+    voxelRoot.remove(m);m.geometry.dispose();m.material.dispose();
+  }
+  voxels.clear();setVoxel(0,0,0);
+}
+$('voxelAdd').onclick=()=>{
+  voxelRemove=false;
+  $('voxelAdd').classList.add('selected');$('voxelRemove').classList.remove('selected');
+};
+$('voxelRemove').onclick=()=>{
+  voxelRemove=true;
+  $('voxelRemove').classList.add('selected');$('voxelAdd').classList.remove('selected');
+};
+$('voxelClear').onclick=resetVoxels;
+function selectEditorMode(nextMode){
+  mode=nextMode;
+  document.querySelectorAll('[data-mode]').forEach(b=>
+    b.classList.toggle('active',b.dataset.mode===mode));
+  $('paintPanel').classList.toggle('hidden',mode!=='painting');
+  $('sculptPanel').classList.toggle('hidden',mode!=='sculpture');
+  $('voxelPanel').classList.toggle('hidden',mode!=='voxel');
+  $('shapePanel').classList.toggle('hidden',mode!=='sculpture');
+  $('reliefControls').classList.toggle('hidden',!editingWall()||mode!=='sculpture');
+}
+document.querySelectorAll('[data-mode]').forEach(b=>
+  b.onclick=()=>selectEditorMode(b.dataset.mode));
+
 function openEditor(){if(room==='depot')return;show('editor');$('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '+activeSpot.type+' · 14 day exhibition'}
 $('publish').onclick=()=>{if(!activeSpot)return;let a={id:crypto.randomUUID(),spotId:activeSpot.id,artist:$('artist').value.trim()||'Anonymous Artist',title:$('artTitle').value.trim()||'Untitled',desc:$('artDesc').value.trim(),mode,color,createdAt:Date.now(),shape:$('shape').value,complexity:+$('complexity').value,distortion:+$('distortion').value};if(mode==='painting')a.image=artCanvas.toDataURL('image/png');if(mode==='voxel'){let all=[...voxels.values()].map(m=>m.userData.grid),min=[Math.min(...all.map(v=>v[0])),Math.min(...all.map(v=>v[1])),Math.min(...all.map(v=>v[2]))],max=[Math.max(...all.map(v=>v[0])),Math.max(...all.map(v=>v[1])),Math.max(...all.map(v=>v[2]))];a.voxels=all.map(v=>v.map((n,i)=>n-(min[i]+max[i])/2));}artworks.push(a);try{localStorage.setItem(storageKey,JSON.stringify(artworks))}catch(e){artworks.pop();toast('Storage full. Try a simpler sculpture or smaller painting.');return}hide('editor');objects=[];createRoom();toast('Artwork exhibited! It will move to the Depot after 14 days.');};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});try{createRoom();initSculpt();initVoxels();document.getElementById('bootStatus')?.remove();requestAnimationFrame(tick);}catch(e){console.error('MAD initialization failed',e);document.getElementById('bootStatus').textContent='Museum startup error: '+e.message;}

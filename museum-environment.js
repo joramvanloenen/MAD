@@ -79,7 +79,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
   if(!isDepot){
     // Two internal dividing partitions. Their broad central openings make
     // three contiguous galleries with sightlines through the complete museum.
-    for(const x of [-5.5,5.5]){
+    for(const x of [-6.5,7.5]){
       for(const [za,zb] of [[-11.8,-5.55],[5.55,11.8]]){
         const z=(za+zb)/2,len=zb-za;
         scene.add(mk(.3,7.7,len,wall,x,3.85,z));

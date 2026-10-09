@@ -16,9 +16,10 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { MuseumGI } from './gi.js';
+import { buildMuseumEnvironment } from './museum-environment.js';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js';
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
-let scene,camera,renderer,gi=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
+let scene,camera,renderer,gi=null,environment=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
 const slots=[{id:'w1',type:'wall',x:-10,z:-10.5,rot:0},{id:'w2',type:'wall',x:-3,z:-10.5,rot:0},{id:'w3',type:'wall',x:4,z:-10.5,rot:0},{id:'w4',type:'wall',x:11,z:-10.5,rot:0},{id:'w5',type:'wall',x:-10,z:10.5,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:10.5,rot:Math.PI},{id:'w7',type:'wall',x:4,z:10.5,rot:Math.PI},{id:'w8',type:'wall',x:11,z:10.5,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0}];
 const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6ba','#171a1e','#e2a0b8','#9b744a'];
@@ -28,18 +29,24 @@ function box(w,h,d,col,x=0,y=0,z=0,material){let mesh=new THREE.Mesh(new THREE.B
 function labelSprite(text,w=2){let c=document.createElement('canvas');c.width=512;c.height=192;let ctx=c.getContext('2d');ctx.fillStyle='#f2f0e8';ctx.fillRect(0,0,512,192);ctx.fillStyle='#1b2221';ctx.font='bold 34px Arial';ctx.fillText(text.slice(0,23),25,65);ctx.fillStyle='#66706b';ctx.font='22px Arial';ctx.fillText('MAD  /  OPEN COLLECTION',25,111);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*192/512),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));return m}
 function createRoom(){
   if(gi){gi.dispose();gi=null}
+  if(environment){environment.dispose();environment=null}
   if(scene)scene.traverse(o=>{
     if(!o.isMesh)return;
     o.geometry?.dispose();
     const materials=Array.isArray(o.material)?o.material:[o.material];
     for(const m of materials){m?.map?.dispose();m?.dispose()}
   });
-  scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#737978');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer)renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.1:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xf7fcff,0x85847b,.22));const sun=new THREE.DirectionalLight(0xffffff,.65);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
+  scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#737978');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer)renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,matchMedia('(pointer:coarse)').matches?1.1:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
 for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],[.45,24,19.5,0]]){scene.add(box(w,8,d,mat,x,4,z));}
 scene.add(box(39,.3,24,0xd0d0c9,0,8,0));
-for(let x=-15;x<=15;x+=6)for(let z=-7;z<=7;z+=7){let light=new THREE.PointLight(0xfff6e6,room==='gallery'?18:11,10);light.position.set(x,7.4,z);scene.add(light);scene.add(box(.8,.06,.8,0xf6f4e9,x,7.84,z));}
-for(let z of [-11,11]){scene.add(box(38,.05,.22,0x222a29,0,.15,z));}
-const gate=box(4,3,.3,0x262e2c,17.6,1.5,0);scene.add(gate);const gateSign=labelSprite(room==='gallery'?'TO THE DEPOT →':'← MAIN GALLERY',2.5);gateSign.position.set(17.27,2.1,.22);gateSign.rotation.y=-Math.PI/2;scene.add(gateSign);objects.push({mesh:gate,kind:'portal'});
+environment=buildMuseumEnvironment(scene,room,{quality:matchMedia('(pointer:coarse)').matches?'eco':'high'});
+const gate=box(.12,2.85,3.1,0xffffff,18.52,1.43,0);
+gate.visible=false;scene.add(gate);
+for(const z of [-1.68,1.68])scene.add(box(.24,3.25,.22,0xe4e3dc,18.55,1.63,z));
+scene.add(box(.24,.25,3.58,0xe4e3dc,18.55,3.28,0));
+const gateSign=labelSprite(room==='gallery'?'DEPOT  →':'←  GALLERY',1.75);
+gateSign.position.set(18.26,2.85,0);gateSign.rotation.y=-Math.PI/2;scene.add(gateSign);
+objects.push({mesh:gate,kind:'portal'});
 artGroup=new THREE.Group();scene.add(artGroup);
 if(room==='gallery'){for(let s of slots)makeSpot(s)}else{artworks.filter(a=>expired(a)).forEach((a,i)=>makeDepotArt(a,i));}
 const wallText=labelSprite(room==='gallery'?'THE GALLERY — NOW SHOWING':'THE DEPOT — COLLECTION',4);wallText.position.set(0,5,-11.73);scene.add(wallText);
@@ -267,7 +274,21 @@ const ray=new THREE.Raycaster();function nearest(){const v=new THREE.Vector3(0,0
 function updateTarget(){interactTarget=nearest();const prompt=$('prompt');if(interactTarget){prompt.style.display='block';prompt.textContent=interactTarget.kind==='portal'?(room==='gallery'?'E · VISIT THE DEPOT':'E · RETURN TO GALLERY'):interactTarget.kind==='spot'?'E · CREATE AN ARTWORK':'E · VIEW ARTWORK';}else prompt.style.display='none'}
 function interact(){if(!interactTarget)return;const o=interactTarget;if(o.kind==='portal'){room=room==='gallery'?'depot':'gallery';objects=[];createRoom();toast(room==='depot'?'Welcome to the Depot':'Welcome to the Gallery');return}if(o.kind==='spot'){activeSpot=o.spot;openEditor();return}if(o.kind==='art'&&o.art){$('infoTitle').textContent=o.art.title||'Untitled';$('infoText').textContent='By '+o.art.artist+'\n\n'+(o.art.desc||'No description provided.')+'\n\n'+(expired(o.art)?'In the permanent Depot':'On view until '+new Date(o.art.createdAt+14*86400000).toLocaleDateString());show('info')}}
 function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open')}
-function tick(now){requestAnimationFrame(tick);gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')){let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);camera.position.z=clamp(camera.position.z,-11.15,11.15);updateTarget()}renderer.render(scene,camera);}
+function tick(now){requestAnimationFrame(tick);gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')){let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
+camera.position.z=clamp(camera.position.z,-11.15,11.15);
+if(environment?.colliders?.length){
+  const p=camera.position,radius=.38;
+  for(const c of environment.colliders){
+    const cx=clamp(p.x,c.x-c.hx,c.x+c.hx);
+    const cz=clamp(p.z,c.z-c.hz,c.z+c.hz);
+    const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
+    if(d2>=radius*radius)continue;
+    if(d2>.000001){const f=(radius-Math.sqrt(d2))/Math.sqrt(d2);p.x+=dx*f;p.z+=dz*f}
+    else {const ox=c.hx+radius-Math.abs(p.x-c.x),oz=c.hz+radius-Math.abs(p.z-c.z);
+      if(ox<oz)p.x+=p.x<c.x?-ox:ox;else p.z+=p.z<c.z?-oz:oz}
+  }
+}
+updateTarget()}renderer.render(scene,camera);}
 document.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyG'&&!e.repeat&&museumActive())cycleGi();if(e.code==='KeyE'&&!e.repeat&&!$('editor').classList.contains('open'))interact()});document.addEventListener('keyup',e=>keys[e.code]=false);// Pointer lock is the preferred desktop FPS control. Some embedded browsers
 // refuse it, so moving the mouse across the canvas also provides free-look.
 let previousMouse=null;

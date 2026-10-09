@@ -980,20 +980,6 @@ function selectEditorMode(nextMode){
   $('reliefControls').classList.toggle('hidden',!editingWall()||mode!=='sculpture');
 }
 document.querySelectorAll('[data-mode]').forEach(b=>
-    b.classList.toggle('active',b.dataset.mode===mode));
-  $('paintPanel').classList.toggle('hidden',mode!=='painting');
-  $('sculptPanel').classList.toggle('hidden',mode!=='sculpture'&&mode!=='clay');
-  $('clayTools').classList.toggle('hidden',mode!=='clay');
-  if(sculptMesh)sculptMesh.visible=mode==='sculpture';
-  if(clayMesh)clayMesh.visible=mode==='clay';
-  if(mode==='clay')$('sculptHelp').textContent='Brush directly onto the smooth volumetric surface. The mesh updates as you sculpt and uses distance-based LOD in the museum.';
-  $('voxelPanel').classList.toggle('hidden',mode!=='voxel');
-  $('shapePanel').classList.toggle('hidden',mode!=='sculpture');
-  $('paintingOptions').classList.toggle('hidden',mode!=='painting');
-  $('sculptureOptions').classList.toggle('hidden',mode==='painting');
-  $('reliefControls').classList.toggle('hidden',!editingWall()||mode!=='sculpture');
-}
-document.querySelectorAll('[data-mode]').forEach(b=>
   b.onclick=()=>selectEditorMode(b.dataset.mode));
 
 function artworkDetailsValid(){

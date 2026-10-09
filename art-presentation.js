@@ -1,6 +1,7 @@
 // Artwork materials, adjustable canvas/frame formats and procedural geometry.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import {constrainReliefGeometry,sanitizeWallVoxels} from './wall-art.js';
+import {clayObject} from './clay-sculpt.js';
 
 const box=(w,h,d,mat,x=0,y=0,z=0)=>{
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
@@ -77,6 +78,7 @@ function framedPainting(a){
 }
 export function artMesh(a,isWall=false){
   if(a.mode==='painting')return framedPainting(a);
+  if(a.mode==='clay')return clayObject(a,sculptureMaterial);
   const group=new THREE.Group();
   if(a.mode==='voxel'){
     const cells=isWall?sanitizeWallVoxels(a.voxels):a.voxels||[];

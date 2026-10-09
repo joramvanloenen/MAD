@@ -39,7 +39,7 @@ const museumAudio=new MuseumAudio();
 const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   new URLSearchParams(location.search).has('safe');
-let framesRendered=0,renderRecovery=false;
+let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
 let scene,camera,renderer,gi=null,environment=null,inspector=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
@@ -106,7 +106,8 @@ function createRoom(){
     powerPreference:MOBILE_SAFE?'default':'high-performance',
     stencil:false
   });
-  renderer.debug.onShaderError=(gl,program,vertexShader,fragmentShader)=>{
+  if(renderer.debug)renderer.debug.onShaderError=(gl,program,vertexShader,fragmentShader)=>{
+    shaderFailed=true;
     console.error('MAD GPU shader compilation failed:',
       gl.getProgramInfoLog(program),
       gl.getShaderInfoLog(vertexShader),gl.getShaderInfoLog(fragmentShader));
@@ -1094,6 +1095,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   // Keep only ONE active WebGL context during museum startup.
   // Heavy sculpt/voxel editors are created on first use.
   renderer.render(scene,camera);
+  if(shaderFailed)throw new Error('Gallery shader failed to compile on this device.');
   document.getElementById('bootStatus').style.display='none';
   requestAnimationFrame(tick);if(museumStore.enabled)syncPublicGallery();}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
 </script></body></html>

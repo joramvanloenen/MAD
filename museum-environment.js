@@ -124,13 +124,16 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
         fixture.rotation.x=(z<0?-.33:.33);
         scene.add(fixture);
         scene.add(mk(.016,.21,.016,black,x,7.66,spotZ));
+        // Keep the track fixtures visible, but only a few REAL spot lights
+        // on mobile. Each spotlight adds a costly shader-uniform array entry.
+        // Dozens of active spotlights exceed common mobile fragment limits.
+        if(quality==='eco' && !(ix++%6===0))continue;
         const target=new THREE.Object3D();
         target.position.set(x,2.55,z<0?-10.7:10.7);
         scene.add(target);
         const light=new THREE.SpotLight(0xfff0d8,room==='gallery'?75:48,13,.48,.8,1.7);
         light.position.copy(fixture.position);
         light.target=target;
-        // Four select shadow-casting exhibition lights; all others are cheaper.
         light.castShadow=quality!=='eco'&&(ix++%11===0);
         if(light.castShadow){
           light.shadow.mapSize.set(512,512);

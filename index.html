@@ -30,6 +30,7 @@ import { buildMuseumEnvironment } from './museum-environment.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js';
 import { makeArtworkInspector } from './museum-inspection.js';
 import { MuseumAudio } from './museum-audio.js';
+import {findVacantSlot, viewFromSlot} from './museum-placement.js';
 import { ClayField } from './clay-sculpt.js';
 import { MuseumStore } from './museum-store.js';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js';
@@ -41,7 +42,7 @@ const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   new URLSearchParams(location.search).has('safe');
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
-let scene,camera,renderer,gi=null,environment=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
+let scene,camera,renderer,gi=null,environment=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
 $('cloudStatus').textContent=museumStore.enabled?'CLOUD · REVIEWED':'LOCAL ONLY';
 $('syncBtn').classList.toggle('hidden',!museumStore.enabled);
@@ -467,7 +468,14 @@ function interact(){
     requestAnimationFrame(animateDoor);
     return;
   }
-  if(o.kind==='spot'){activeSpot=o.spot;openEditor();return;}
+  if(o.kind==='spot'){
+    const availability=findVacantSlot(o.spot?.id,slots,artworks);
+    if(!availability.ok){toast(availability.reason);return}
+    activeSpot=availability.slot;
+    editingSpotId=availability.slot.id;
+    openEditor();
+    return;
+  }
   if(o.kind==='art'&&o.art){
     const a=o.art;
     $('infoTitle').textContent=a.title||'Untitled';
@@ -482,7 +490,7 @@ function interact(){
     inspector.open(a,a.mounting||slots.find(s=>s.id===a.spotId)?.type||'plinth');
   }
 }
-function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close()}
+function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close();if(id==='editor'&&!publishingArt){editingSpotId=null;activeSpot=null}}
 function tick(now){requestAnimationFrame(tick);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
 camera.position.z=clamp(camera.position.z,-11.15,11.15);
 if(environment?.colliders?.length){
@@ -1130,7 +1138,10 @@ function updatePublishState(){
 $('artTitle').addEventListener('input',updatePublishState);
 $('artDesc').addEventListener('input',updatePublishState);
 function openEditor(){
-  if(room==='depot'||!activeSpot)return;
+  if(room==='depot'||!editingSpotId)return;
+  const selection=findVacantSlot(editingSpotId,slots,artworks);
+  if(!selection.ok){toast(selection.reason);editingSpotId=null;activeSpot=null;return}
+  activeSpot=selection.slot;
   const wall=editingWall();
   $('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '
     +(wall?'Wall':activeSpot.type==='plinth'?'Pedestal':'Floor')+' · 14-day exhibition';
@@ -1156,7 +1167,11 @@ function openEditor(){
   show('editor');
 }
 $('publish').onclick=async()=>{
-  if(!activeSpot)return;
+  if(publishingArt||room!=='gallery'||!editingSpotId)return;
+  const chosen=findVacantSlot(editingSpotId,slots,artworks);
+  if(!chosen.ok){toast(chosen.reason);return}
+  const exhibitSlot=chosen.slot;
+  activeSpot=exhibitSlot;
   if(!artworkDetailsValid()){
     updatePublishState();
     toast('An artwork title and description are required before placing it.');
@@ -1165,8 +1180,8 @@ $('publish').onclick=async()=>{
   }
   const wall=editingWall();
   const a={
-    id:crypto.randomUUID(),spotId:activeSpot.id,
-    mounting:activeSpot.type,
+    id:crypto.randomUUID(),spotId:exhibitSlot.id,
+    mounting:exhibitSlot.type,
     artist:$('artist').value.trim()||'Anonymous Artist',
     title:$('artTitle').value.trim(),
     desc:$('artDesc').value.trim(),
@@ -1191,11 +1206,15 @@ $('publish').onclick=async()=>{
       a.voxels=all.map(v=>v.map((n,i)=>n-(min[i]+max[i])/2));
     }
   }
+  publishingArt=true;
+  $('publish').disabled=true;
   artworks.push(a);
   try{
     localStorage.setItem(storageKey,JSON.stringify(artworks));
   }catch(e){
     artworks.pop();
+    publishingArt=false;
+    updatePublishState();
     toast('Storage full. Try a simpler sculpture or smaller painting.');
     return;
   }
@@ -1214,9 +1233,16 @@ $('publish').onclick=async()=>{
       syncMessage='Artwork saved locally, but the public upload failed.';
     }finally{$('publish').disabled=false}
   }
+  // After rebuilding, stand in front of the exact spot just filled.
   hide('editor');
   objects=[];createRoom();
-  toast(syncMessage);
+  const pose=viewFromSlot(exhibitSlot);
+  camera.position.set(pose.x,pose.y,pose.z);
+  yaw=pose.yaw;pitch=pose.pitch;
+  camera.rotation.set(pitch,yaw,0);
+  editingSpotId=null;activeSpot=null;publishingArt=false;
+  updatePublishState();
+  toast('Exhibited at '+exhibitSlot.id.toUpperCase()+' · '+syncMessage);
 };
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});try{
   createRoom();

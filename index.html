@@ -211,7 +211,7 @@ function initSculpt(){
     new THREE.LineBasicMaterial({color:0x8e9690})
   );
   wallTrim.position.copy(sculptWall.position);
-  sculptWall.add(); // Wall geometry remains static while the inspection camera orbits.
+  // Wall geometry remains static while the inspection camera orbits.
   sculptScene.add(wallTrim);
   sculptWall.userData.trim=wallTrim;
   wallTrim.visible=false;
@@ -406,7 +406,79 @@ function selectEditorMode(nextMode){
 document.querySelectorAll('[data-mode]').forEach(b=>
   b.onclick=()=>selectEditorMode(b.dataset.mode));
 
-function openEditor(){if(room==='depot')return;show('editor');$('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '+activeSpot.type+' · 14 day exhibition'}
-$('publish').onclick=()=>{if(!activeSpot)return;let a={id:crypto.randomUUID(),spotId:activeSpot.id,artist:$('artist').value.trim()||'Anonymous Artist',title:$('artTitle').value.trim()||'Untitled',desc:$('artDesc').value.trim(),mode,color,createdAt:Date.now(),shape:$('shape').value,complexity:+$('complexity').value,distortion:+$('distortion').value};if(mode==='painting')a.image=artCanvas.toDataURL('image/png');if(mode==='voxel'){let all=[...voxels.values()].map(m=>m.userData.grid),min=[Math.min(...all.map(v=>v[0])),Math.min(...all.map(v=>v[1])),Math.min(...all.map(v=>v[2]))],max=[Math.max(...all.map(v=>v[0])),Math.max(...all.map(v=>v[1])),Math.max(...all.map(v=>v[2]))];a.voxels=all.map(v=>v.map((n,i)=>n-(min[i]+max[i])/2));}artworks.push(a);try{localStorage.setItem(storageKey,JSON.stringify(artworks))}catch(e){artworks.pop();toast('Storage full. Try a simpler sculpture or smaller painting.');return}hide('editor');objects=[];createRoom();toast('Artwork exhibited! It will move to the Depot after 14 days.');};
+function openEditor(){
+  if(room==='depot'||!activeSpot)return;
+  const wall=editingWall();
+  $('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '
+    +(wall?'Wall':activeSpot.type==='plinth'?'Pedestal':'Floor')+' · 14-day exhibition';
+  $('editorRule').textContent=wall
+    ? 'WALL ZONE · Paint a flat artwork, or make a 3D relief attached to this wall. The wall is a solid boundary: no sculpting through it.'
+    : 'FREE-STANDING ZONE · Create a sculpture with full 3D freedom, or choose a painted artwork.';
+  document.querySelector('[data-mode="sculpture"]').textContent=wall?'WALL RELIEF':'3D SCULPTURE';
+  document.querySelector('[data-mode="voxel"]').textContent=wall?'VOXEL RELIEF':'VOXEL SCULPT';
+  $('sculptHelp').textContent=wall
+    ? 'The wall is always visible. Drag to move the inspection camera around the relief. Geometry is constrained in front of the wall; depth never passes through it.'
+    : 'Drag to rotate your free-standing sculpture. Adjust its shape, distortion and color.';
+  $('voxelHelp').textContent=wall
+    ? 'Click the wall to add your first layer. Click exposed faces to build outward. The back wall is solid; placing voxels behind it is forbidden. Drag to inspect from the front and sides.'
+    : 'Click a face to add a voxel, or remove voxels. Drag to orbit your sculpture.';
+  sculptWall.visible=wall;
+  sculptWall.userData.trim.visible=wall;
+  sculptBase.visible=!wall;
+  voxelWall.visible=wall;
+  voxelBase.visible=!wall;
+  sculptOrbitX=0;sculptOrbitY=0;
+  voxelOrbitX=0;voxelOrbitY=0;
+  if(wall){
+    sculptCam.position.set(.35,.25,4.7);sculptCam.lookAt(0,0,.25);
+    voxelCam.position.set(.8,.5,10);voxelCam.lookAt(0,0,0);
+  }else{
+    sculptCam.position.set(3,2.4,4.2);sculptCam.lookAt(0,0,0);
+    voxelCam.position.set(5,4,6);voxelCam.lookAt(0,.2,0);
+  }
+  resetVoxels();
+  refreshSculpt();
+  selectEditorMode(wall?'painting':'sculpture');
+  show('editor');
+}
+$('publish').onclick=()=>{
+  if(!activeSpot)return;
+  const wall=editingWall();
+  const a={
+    id:crypto.randomUUID(),spotId:activeSpot.id,
+    mounting:activeSpot.type,
+    artist:$('artist').value.trim()||'Anonymous Artist',
+    title:$('artTitle').value.trim()||'Untitled',
+    desc:$('artDesc').value.trim(),
+    mode,color,createdAt:Date.now(),
+    shape:$('shape').value,complexity:+$('complexity').value,
+    distortion:+$('distortion').value,
+    wallRelief:wall&&mode!=='painting',
+    reliefDepth:wall?reliefDepth():undefined
+  };
+  if(mode==='painting')a.image=artCanvas.toDataURL('image/png');
+  if(mode==='voxel'){
+    const all=[...voxels.values()].map(m=>m.userData.grid.slice());
+    if(!all.length){toast('Add at least one voxel first.');return;}
+    if(wall){
+      a.voxels=sanitizeWallVoxels(all);
+    }else{
+      const min=[0,1,2].map(i=>Math.min(...all.map(v=>v[i])));
+      const max=[0,1,2].map(i=>Math.max(...all.map(v=>v[i])));
+      a.voxels=all.map(v=>v.map((n,i)=>n-(min[i]+max[i])/2));
+    }
+  }
+  artworks.push(a);
+  try{
+    localStorage.setItem(storageKey,JSON.stringify(artworks));
+  }catch(e){
+    artworks.pop();
+    toast('Storage full. Try a simpler sculpture or smaller painting.');
+    return;
+  }
+  hide('editor');
+  objects=[];createRoom();
+  toast('Artwork exhibited! It will move to the Depot after 14 days.');
+};
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});try{createRoom();initSculpt();initVoxels();document.getElementById('bootStatus')?.remove();requestAnimationFrame(tick);}catch(e){console.error('MAD initialization failed',e);document.getElementById('bootStatus').textContent='Museum startup error: '+e.message;}
 </script></body></html>

@@ -1,7 +1,6 @@
-// Configure after creating a Supabase project and applying supabase/schema.sql.
-// Publishable / anon keys are safe to use in browsers WITH the included RLS.
-// NEVER paste a Supabase service_role or secret key here.
-export const CLOUD={
-  url:'',
-  anonKey:''
+// Public Supabase connection settings (safe for browser use).
+// Never place service-role or OAuth client secrets here.
+export const CLOUD = {
+  url: 'https://hzpvktvrlocjubargvod.supabase.co',
+  anonKey: 'sb_publishable_V4GGgmbSM1vLe-8eiruwtQ_Vyt7QWBH'
 };

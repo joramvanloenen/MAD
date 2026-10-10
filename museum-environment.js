@@ -44,7 +44,7 @@ function woodTexture(depot=false){
 function titlePanel(text,w=3.6){
   const c=document.createElement('canvas');c.width=1024;c.height=190;
   const x=c.getContext('2d');
-  x.clearRect(0,0,1024,190);x.font='500 62px Arial';x.textAlign='center';x.fillStyle='#6b706a';x.fillText(text,512,117);
+  x.clearRect(0,0,1024,190);x.font='700 66px Arial';x.textAlign='center';x.fillStyle='#252c2a';x.fillText(text,512,117);
   const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
   return new THREE.Mesh(new THREE.PlaneGeometry(w,w*190/1024),
     new THREE.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));
@@ -102,15 +102,8 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
       label.position.set(x,6.1,-11.64);scene.add(label);
     }
   }else{
-    // Depot reads as an archive: storage ranges and long understated display
-    // shelving, while keeping the main walking route unobstructed.
-    for(const x of [-18.5,18.5]){
-      for(const z of [-7.5,-2.5,2.5,7.5]){
-        const shelf=mk(.38,2.9,3.8,black,x,1.46,z);scene.add(shelf);
-        for(let h=.45;h<2.8;h+=.68)
-          scene.add(mk(.63,.055,3.7,brushed,x,h,z));
-      }
-    }
+    // Archive sliding mesh racks are assembled by museum-depot.js, which also
+    // mounts the real archived paintings and provides their interactive rails.
     const depotPanel=titlePanel('THE DEPOT   /   ARCHIVE',4.3);
     depotPanel.position.set(0,6,-11.66);scene.add(depotPanel);
   }

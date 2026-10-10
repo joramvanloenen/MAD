@@ -1525,6 +1525,10 @@ function updateEditorStages(){
     sculptWall.userData.trim.visible=wall;
     sculptBase.visible=!wall&&!inVitrine;
     if(sculptVitrinePreview)sculptVitrinePreview.visible=inVitrine;
+    if(mixedStudio){
+      mixedStudio.group.scale.setScalar(inVitrine?.42:wall?.8:1);
+      mixedStudio.group.position.y=inVitrine?.19:0;
+    }
     sculptBase.scale.y=activeSpot?.type==='plinth'?6:1;
     sculptBase.position.y=activeSpot?.type==='plinth'?-1.48:-1.15;
     if(sculptMesh){

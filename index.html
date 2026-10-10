@@ -224,6 +224,7 @@ function createModernDepotDoor(){
 }
 function createRoom(){
   if(gi){gi.dispose();gi=null}
+  depotDoorLeaf=null;
   if(environment){environment.dispose();environment=null}
   if(depotArchive){depotArchive.dispose();depotArchive=null}
   if(splitFlap){splitFlap.dispose();splitFlap=null}
@@ -340,7 +341,11 @@ camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
     console.warn('MAD GI unavailable, continuing with standard lighting',error);
     gi?.dispose();gi=null;
   }
-  refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':'THE DEPOT<br>PERMANENT COLLECTION';}
+  refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':
+  room==='depot'?'THE DEPOT<br>PERMANENT COLLECTION':
+  room==='cellar'?'AFTER HOURS<br>UNDERGROUND COLLECTION':
+  room==='wing'?'NEW WING<br>THREE NEW GALLERIES':
+  'UPPER FLOOR<br>ART & DISCOVERY';}
 function expired(a){return a.audience==='after-hours'?false:Date.now()-a.createdAt>=14*86400000}
 function spotArt(id){return artworks.find(a=>a.spotId===id&&!expired(a))}
 // Quiet, gallery-style availability markers: small and physically mounted.
@@ -565,7 +570,14 @@ function updateTarget(){
   if(!interactTarget){prompt.style.display='none';return}
   prompt.style.display='block';
   if(interactTarget.kind==='portal')
-    prompt.textContent=room==='gallery'?'E · VISIT THE DEPOT':'E · RETURN TO GALLERY';
+    prompt.textContent=room==='gallery'?'E · THROUGH TO THE DEPOT':
+      room==='depot'?'E · RETURN TO GALLERY':'E · BACK TO MAIN GALLERY';
+  else if(interactTarget.kind==='zone')
+    prompt.textContent=interactTarget.via?.startsWith('stairs')
+      ? 'E · '+(interactTarget.to==='upper'?'ASCEND TO UPPER GALLERY':'DESCEND THE STAIRS')
+      : 'E · ENTER '+interactTarget.to.toUpperCase();
+  else if(interactTarget.kind==='secret')
+    prompt.textContent='E · OPEN THE UNMARKED DOOR';
   else if(interactTarget.kind==='rack')
     prompt.textContent='E · '+(interactTarget.rack.target>.5?'CLOSE':'SLIDE')+
       ' ARCHIVE RACK  '+interactTarget.rack.id;
@@ -573,30 +585,58 @@ function updateTarget(){
   else if(interactTarget.kind==='flap')prompt.textContent='E · EDIT SPLIT-FLAP';
   else prompt.textContent='E · VIEW ARTWORK';
 }
+function transitionToRoom(destination,{via='',dark=false}={}){
+  if(roomChanging)return;
+  roomChanging=true;
+  const from=room,fade=document.createElement('div');
+  fade.setAttribute('aria-hidden','true');
+  fade.style.cssText='position:fixed;inset:0;z-index:44;pointer-events:none;background:'+
+    (dark?'#080a0d':'#f9ffff')+
+    ';opacity:0;transition:opacity .7s ease;will-change:opacity';
+  document.body.appendChild(fade);
+  const startTime=performance.now(),startY=camera.position.y;
+  if(via.includes('stairs')||via==='secret'){
+    const goingDown=via==='secret'||via==='stairs-down';
+    const animate=now=>{
+      if(!roomChanging)return;
+      const t=Math.min(1,(now-startTime)/670);
+      camera.position.y=startY+(goingDown?-.85:.85)*t;
+      if(t<1)requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(()=>fade.style.opacity='1');
+  setTimeout(()=>{
+    room=destination;objects=[];createRoom();
+    const spawn={
+      gallery:from==='cellar'?{x:-16.5,z:4.4,yaw:-Math.PI/2}:
+        from==='wing'?{x:15.8,z:-9.1,yaw:Math.PI}:
+        {x:16.35,z:.05,yaw:Math.PI/2},
+      depot:{x:16.35,z:.05,yaw:Math.PI/2},
+      wing:from==='upper'?{x:14.6,z:5.75,yaw:0}:{x:15.5,z:8.1,yaw:0},
+      upper:{x:15.5,z:5.75,yaw:0},
+      cellar:{x:-15.7,z:4.42,yaw:-Math.PI/2}
+    }[destination]||{x:0,z:8,yaw:0};
+    camera.position.set(spawn.x,1.7,spawn.z);
+    yaw=spawn.yaw;pitch=0;camera.rotation.set(0,yaw,0);
+    fade.style.opacity='0';
+    setTimeout(()=>{fade.remove();roomChanging=false},740);
+    toast(({gallery:'Main gallery',depot:'The Depot',wing:'The New Wing',
+      upper:'Upper galleries',cellar:'After Hours · underground collection'})[destination]||'MAD Museum');
+  },760);
+}
 function interact(){
   if(!interactTarget)return;
   const o=interactTarget;
   if(o.kind==='portal'){
-    if(doorTransitioning)return;
-    doorTransitioning=true;
-    const initialLeaf=depotDoorLeaf;
-    const began=performance.now();
-    const animateDoor=(now)=>{
-      if(initialLeaf!==depotDoorLeaf)return;
-      const t=clamp((now-began)/390,0,1);
-      initialLeaf.rotation.y=-1.13*(1-Math.pow(1-t,3));
-      if(t<1){requestAnimationFrame(animateDoor);return}
-      setTimeout(()=>{
-        room=room==='gallery'?'depot':'gallery';
-        objects=[];createRoom();
-        camera.position.set(16.75,1.7,0);
-        yaw=Math.PI/2;pitch=0;camera.rotation.set(0,yaw,0);
-        doorTransitioning=false;
-        toast(room==='depot'?'Welcome to the Depot':'Welcome to the Gallery');
-      },100);
-    };
-    requestAnimationFrame(animateDoor);
-    return;
+    const destination=room==='gallery'?'depot':
+      room==='depot'?'gallery':room==='upper'?'wing':'gallery';
+    transitionToRoom(destination);return;
+  }
+  if(o.kind==='zone'){transitionToRoom(o.to,{via:o.via||''});return;}
+  if(o.kind==='secret'){
+    toast('You found the hidden passage. After Hours may be unsettling.');
+    transitionToRoom('cellar',{via:'secret',dark:true});return;
   }
   if(o.kind==='flap'){openFlapEditor();return;}
   if(o.kind==='rack'){
@@ -627,8 +667,18 @@ function interact(){
   }
 }
 function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close();if(id==='editor'&&!publishingArt){editingSpotId=null;activeSpot=null}}
-function tick(now){requestAnimationFrame(tick);depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
-camera.position.z=clamp(camera.position.z,-11.15,11.15);
+function tick(now){requestAnimationFrame(tick);
+if(depotDoorLeaf){
+  const nearby=camera.position.x>15.6&&Math.abs(camera.position.z)<2.4;
+  const goal=nearby?-1.14:0;
+  depotDoorLeaf.rotation.y+=(goal-depotDoorLeaf.rotation.y)*.08;
+}
+depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;const inEastHall=room!=='cellar'&&camera.position.x>17.9&&Math.abs(camera.position.z)<1.32;
+camera.position.x=clamp(camera.position.x,-18.3,inEastHall?26.15:18.3);
+const inNorthHall=room==='gallery'&&camera.position.x>14.3&&
+  camera.position.x<17.75&&camera.position.z< -10.9;
+camera.position.z=clamp(camera.position.z,inNorthHall?-17.55:-11.15,11.15);
+if(camera.position.x>19.25)camera.position.z=clamp(camera.position.z,-1.17,1.17);
 if(environment?.colliders?.length){
   const p=camera.position,radius=.38;
   for(const c of environment.colliders){

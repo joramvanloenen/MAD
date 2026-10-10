@@ -112,11 +112,13 @@ function createModernDepotDoor(){
   const reveal=new THREE.MeshStandardMaterial({color:room==='gallery'?0xe7e4dc:0xc2c3bb,roughness:.92});
   for(const z of [-1.59,1.59])add(.45,3.40,.075,reveal,19.49,1.70,z);
   add(.45,.09,3.20,reveal,19.49,3.41,0);
-  add(.44,.025,3.12,edge,19.49,.014,0);
+  // No continuous base/plinth beneath the door: flooring passes unbroken
+  // through the opening. The room skirting terminates at each door jamb.
   // Powder-coated frame sits just behind the wall's inside face (X=19.275).
   for(const z of [-1.51,1.51])add(.095,3.32,.085,edge,19.34,1.68,z);
   add(.095,.09,3.10,edge,19.34,3.295,0);
-  add(.095,.065,3.10,edge,19.34,.075,0);
+  // Keep a lower rail ONLY under the glazed sidelight, not under the door.
+  add(.095,.065,.76,edge,19.34,.075,1.06);
   add(.075,3.14,.078,edge,19.35,1.67,.61); // sidelight mullion
 
   // Door swings around its actual hinge; panel and pull handle rotate together.

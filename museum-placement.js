@@ -15,14 +15,18 @@ export function viewFromSlot(slot){
   // s.rot=0 on north walls, PI on south walls; positive Z points into
   // the room at the north wall, negative Z at the south wall.
   const isWall=slot.type==='wall';
-  const yaw=isWall&&slot.z>0?Math.PI:0;
+  // The wall rotation, not its Z coordinate, determines the viewing side.
+  // This also supports the new west/east cellar gallery walls.
+  const yaw=isWall?(slot.rot||0):0;
   const inVitrine=slot.type==='vitrine';
-  const z=slot.z+(isWall?Math.cos(yaw)*4.2:inVitrine?2.65:4.3);
+  const distance=isWall?3.25:inVitrine?2.65:4.3;
+  const x=slot.x+(isWall?Math.sin(yaw)*distance:0);
+  const z=slot.z+(isWall?Math.cos(yaw)*distance:distance);
   return {
-    x:Math.max(-17.5,Math.min(17.5,slot.x)),
+    x:Math.max(-17.5,Math.min(17.5,x)),
     y:1.7,
     z:Math.max(-10.6,Math.min(10.6,z)),
     yaw,
-    pitch:isWall?.285:inVitrine?-.17:.065
+    pitch:isWall?.20:inVitrine?-.17:.065
   };
 }

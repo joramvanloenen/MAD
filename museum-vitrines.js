@@ -80,6 +80,8 @@ export function fitArtToVitrine(artObject,sizeFactor=1){
   if(!artObject)return 1;
   artObject.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(artObject);
+  // An empty or malformed imported object should not produce NaN transforms.
+  if(bounds.isEmpty())return 1;
   const size=new THREE.Vector3();
   const center=new THREE.Vector3();
   bounds.getSize(size);bounds.getCenter(center);

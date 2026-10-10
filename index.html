@@ -99,7 +99,7 @@ import { MixedMediaStudio } from './mixed-media.js?v=20261010-mixed6';
 import { installArtworkEditorLayout, setEditorPane, syncEditorToolMode } from './editor-layout.js?v=20261010-editor2';
 import { makeArtworkInspector } from './museum-inspection.js';
 import { MuseumAudio } from './museum-audio.js';
-import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js?v=20261010-expansion3';
+import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js?v=20261010-auth2';
 import {findVacantSlot, viewFromSlot} from './museum-placement.js?v=20261010-cellar5';
 import { ClayField } from './clay-sculpt.js';
 import { MuseumStore } from './museum-store.js?v=auth2';
@@ -953,7 +953,8 @@ function renderCatalog(){
     const title=document.createElement('strong');title.textContent=a.title||'Untitled';
     const artist=document.createElement('span');
     artist.textContent='BY '+(a.artist||'Anonymous')+' · '+
-      (a.audience==='after-hours'?'AFTER HOURS':expired(a)?'DEPOT':'ON EXHIBITION');
+      (a.status==='pending'?'PENDING REVIEW · ONLY VISIBLE TO YOU':
+       a.audience==='after-hours'?'AFTER HOURS':expired(a)?'DEPOT':'ON EXHIBITION');
     const p=document.createElement('p');p.style.margin='6px 0';
     p.textContent=String(a.desc||'').slice(0,160);
     const action=document.createElement('button');

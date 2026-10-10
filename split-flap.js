@@ -55,7 +55,7 @@ export function saveFlapMessages(messages){
 }
 export function buildFlapSequence(artworks,messages,now=Date.now()){
   const recent=(Array.isArray(artworks)?artworks:[]).filter(a=>
-    a.audience!=='after-hours'&&Number.isFinite(a.createdAt)&&a.createdAt<=now&&now-a.createdAt<14*86400000
+    a.audience!=='after-hours'&&a.status!=='pending'&&a.status!=='rejected'&&Number.isFinite(a.createdAt)&&a.createdAt<=now&&now-a.createdAt<14*86400000
   ).sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
   const announcements=recent.map(a=>
     'NEW ART IN MAD\n'+flapLine(a.title||'UNTITLED').slice(0,16)+

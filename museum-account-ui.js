@@ -1,158 +1,120 @@
-// Google account and secure review UI; admin rights come only from Supabase RLS.
+// MAD maintenance dashboard. No visitor sign-in is required or offered.
+// All permissions are checked by Supabase RPCs using a short-lived admin token.
 export function installAccountUI({store,show,hide,toast,sync,storageKey}){
- const $=id=>document.getElementById(id);
- const local=()=>{
-  try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}catch(e){return []}
- };
- const escapeTag=(s,max=200)=>String(s||'').slice(0,max);
- let currentSessionKey='uninitialized';
- const status=()=>{
-  const ready=store.ready,online=store.enabled,logged=store.signedIn;
-  $('cloudStatus').textContent=!online?'LOCAL ONLY':!ready?'CONNECTING…':
-    !logged?'CLOUD · SIGN IN':store.isAdmin?'CLOUD · ADMIN':'CLOUD · SAVED';
-  $('accountBtn').textContent=logged?'ACCOUNT':'SIGN IN';
-  $('accountBtn').title=logged?store.user.email:'Google account sign-in';
-  $('adminBtn').classList.toggle('hidden',!store.isAdmin);
-  $('syncBtn').classList.toggle('hidden',!online);
-  $('startGoogleBtn').classList.toggle('hidden',!online);
-  $('googleSignIn').classList.toggle('hidden',!online||logged);
-  $('googleSignOut').classList.toggle('hidden',!logged);
-  $('migrateArtworks').classList.toggle('hidden',!logged||!local().length);
-  $('accountEmail').textContent=logged?(store.user.email||'Signed in'):'';
-  $('accountStatus').textContent=!online?'Cloud sign-in is not yet configured.':
-    !ready?'Connecting securely to MAD…':
-    logged?store.isAdmin?'Signed in · verified MAD administrator':'Signed in · artwork creator':
-    'Sign in with Google to save and retrieve your artworks.';
-  $('accountHelp').textContent=!online
-   ?'The museum owner must connect a Supabase project and enable Google OAuth before cross-device saving works. This site is still in local demonstration mode.'
-   :logged?'Your new artwork is stored under your account. It will appear in the public museum after administrator approval.'
-   :'Your artworks are saved on the server, associated with your Google account, and reviewed before appearing in the public museum.';
-  if(online&&ready){
-    const key=store.user?.id||'guest';
-    if(key!==currentSessionKey){
-      currentSessionKey=key;
-      sync().catch(e=>console.warn('MAD gallery sync:',e));
-    }
+  const $=id=>document.getElementById(id);
+  let importedLocal=false;
+  const localArt=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}
+    catch{return []}};
+  const label=(value,max=160)=>String(value??'').slice(0,max);
+  function refreshUI(){
+    $('cloudStatus').textContent=!store.enabled?'LOCAL ONLY':
+      !store.ready?'CONNECTING…':'PUBLIC GALLERY · ONLINE';
+    $('syncBtn').classList.toggle('hidden',!store.enabled);
+    $('accountBtn').textContent=store.isAdmin?'MAINTENANCE ✓':'MAINTENANCE';
+    $('adminBtn').classList.toggle('hidden',!store.isAdmin);
+    $('maintenanceLogin').classList.toggle('hidden',store.isAdmin);
+    $('maintenanceLogout').classList.toggle('hidden',!store.isAdmin);
+    $('maintenanceCode').value='';
+    $('accountStatus').textContent=!store.enabled?'Server is not configured.':
+      store.isAdmin?'Maintenance access active · expires after 12 hours':
+      'Visitors can publish without an account. Only the administrator needs a code.';
+    $('migrateArtworks').classList.toggle('hidden',
+      !store.enabled||!store.ready||!localArt().length);
   }
- };
- store.onChange(status);
- status();
- $('accountBtn').onclick=()=>{status();show('account')};
- $('startGoogleBtn').onclick=()=>{status();hide('start');show('account')};
- $('adminBtn').onclick=()=>{show('admin');refreshReviews()};
- const login=async()=>{
-  try{$('googleSignIn').disabled=true;await store.signIn()}
-  catch(e){toast('Google sign-in: '+e.message)}
-  finally{$('googleSignIn').disabled=false}
- };
- $('googleSignIn').onclick=login;
- $('googleSignOut').onclick=async()=>{
-  try{await store.signOut();toast('Signed out of MAD')}
-  catch(e){toast(e.message)}
- };
- $('migrateArtworks').onclick=async()=>{
-  if(!store.signedIn)return;
-  const artwork=local().filter(a=>a&&a.id&&a.spotId&&a.title&&a.desc);
-  if(!artwork.length){toast('No older local works to upload.');return}
-  if(!confirm('Submit '+artwork.length+' local artwork(s) for review? Existing browser copies will be preserved.'))return;
-  $('migrateArtworks').disabled=true;
-  let uploaded=0,skipped=0,failed=0;
-  try{
-    const existing=new Set((await store.load()).map(a=>a.id));
-    for(const item of artwork){
-      if(existing.has(item.id)){skipped++;continue}
-      try{await store.submit(item);uploaded++}
-      catch(e){console.warn('MAD local artwork upload:',item.id,e);failed++}
-    }
-    $('importReport').textContent='Sent for review: '+uploaded+
-      ' · Already uploaded: '+skipped+' · Could not upload: '+failed+
-      '. Original local artworks are unchanged.';
-    await sync();
-  }catch(e){toast('Import failed: '+e.message)}
-  finally{$('migrateArtworks').disabled=false}
- };
- async function refreshReviews(){
-  if(!store.isAdmin)return;
-  const list=$('adminList');list.replaceChildren();
-  $('adminStatus').textContent='Loading review queue…';
-  try{
-    const rows=await store.pending();
-    $('adminStatus').textContent=rows.length+' artwork(s) awaiting review.';
-    for(const row of rows){
-      const art=row.payload||{},card=document.createElement('article');
-      card.className='card';
-      const title=document.createElement('strong');
-      title.textContent=escapeTag(art.title||'Untitled',100);
-      const desc=document.createElement('p');
-      desc.textContent=escapeTag(art.desc||'',500);
-      const meta=document.createElement('p');meta.className='stat';
-      meta.textContent='BY '+escapeTag(art.artist,60)+' · '+
-        escapeTag(art.mode,24).toUpperCase()+' · SLOT '+
-        escapeTag(row.spot_id,8).toUpperCase()+
-        ' · '+new Date(row.created_at).toLocaleDateString();
-      card.append(title,meta,desc);
-      if(art.mode==='painting'&&/^data:image\/png;base64,/.test(art.image||'')){
-        const thumb=document.createElement('img');thumb.src=art.image;
-        thumb.alt='Submitted painting preview';thumb.loading='lazy';
-        thumb.style.cssText='max-width:180px;max-height:135px;object-fit:contain;display:block;margin-bottom:12px';
-        card.append(thumb);
+  store.onChange(refreshUI);refreshUI();
+  $('accountBtn').onclick=()=>{refreshUI();show(store.isAdmin?'admin':'account')};
+  $('adminBtn').onclick=()=>{show('admin');renderList('approved')};
+  $('maintenanceLogin').onclick=async()=>{
+    const code=$('maintenanceCode').value;
+    $('maintenanceLogin').disabled=true;
+    $('accountError').textContent='';
+    try{
+      await store.login(code);
+      $('maintenanceCode').value='';
+      hide('account');show('admin');
+      await renderList('approved');
+      toast('Maintenance access enabled');
+    }catch(e){$('accountError').textContent=e.message}
+    finally{$('maintenanceLogin').disabled=false}
+  };
+  $('maintenanceCode').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();$('maintenanceLogin').click()}
+  });
+  $('maintenanceLogout').onclick=async()=>{
+    try{await store.logout();hide('admin');toast('Maintenance session ended')}
+    catch(e){toast(e.message)}
+  };
+  $('migrateArtworks').onclick=async()=>{
+    const works=localArt().filter(a=>a?.id&&a.spotId&&a.title&&a.desc);
+    if(!works.length)return;
+    if(!confirm('Upload '+works.length+' older browser artworks to the public MAD museum? These will be immediately visible to everyone. Original local copies stay saved.'))return;
+    $('migrateArtworks').disabled=true;
+    let done=0,skipped=0,failed=0;
+    try{
+      const existing=new Set((await store.load()).map(a=>a.id));
+      for(const art of works){
+        if(existing.has(art.id)){skipped++;continue}
+        try{await store.submit(art);done++}
+        catch(e){failed++;console.warn('Upload error',art.id,e)}
       }
-      const rowButtons=document.createElement('div');rowButtons.className='toolrow';
-      for(const [label,next,cls] of [
-        ['APPROVE','approved','btn'],['REJECT','rejected','btn secondary']
-      ]){
-        const btn=document.createElement('button');btn.className=cls;
-        btn.textContent=label;
-        btn.onclick=async()=>{
-          for(const other of rowButtons.querySelectorAll('button'))other.disabled=true;
-          try{
-            await store.moderate(row.id,next);
-            toast(label==='APPROVE'?'Artwork approved and published':'Artwork rejected');
-            await sync();await refreshReviews();
-          }catch(e){
-            toast('Review failed: '+e.message);
-            for(const other of rowButtons.querySelectorAll('button'))other.disabled=false;
-          }
+      $('importReport').textContent='Published: '+done+' · Already online: '+
+        skipped+' · Failed: '+failed+'. Originals were kept in this browser.';
+      await sync();
+    }catch(e){$('importReport').textContent='Import failed: '+e.message}
+    finally{$('migrateArtworks').disabled=false}
+  };
+  async function renderList(status){
+    if(!await store.validateAdmin()){
+      hide('admin');show('account');return;
+    }
+    const list=$('adminList');list.replaceChildren();
+    $('adminStatus').textContent='Loading '+status+' artworks…';
+    try{
+      const records=await store.listStatus(status);
+      $('adminStatus').textContent=records.length+' '+status+' artworks (up to 250).';
+      for(const row of records){
+        const art=row.payload||{};
+        const card=document.createElement('article');card.className='card';
+        const title=document.createElement('strong');title.textContent=label(art.title||'Untitled',100);
+        const meta=document.createElement('p');meta.className='stat';
+        meta.textContent=label(art.artist||'Anonymous',70)+' · '+
+          label(row.spot_id,8).toUpperCase()+' · '+
+          new Date(row.created_at).toLocaleDateString()+
+          ' · '+label(art.mode,22);
+        const desc=document.createElement('p');desc.textContent=label(art.desc,500);
+        card.append(title,meta,desc);
+        if(art.mode==='painting'&&/^data:image\/png;base64,/.test(art.image||'')){
+          const preview=document.createElement('img');preview.src=art.image;
+          preview.loading='lazy';preview.alt='Artwork preview';
+          preview.style.cssText='display:block;max-width:180px;max-height:140px;object-fit:contain;margin-bottom:12px';
+          card.append(preview);
+        }
+        const actions=document.createElement('div');actions.className='toolrow';
+        for(const [word,next] of status==='approved'
+          ?[['HIDE','rejected']]:[['PUBLISH','approved'],['KEEP HIDDEN','rejected']]){
+          const button=document.createElement('button');button.className='btn secondary';button.textContent=word;
+          button.onclick=async()=>{
+            button.disabled=true;
+            try{await store.moderate(row.id,next);await sync();
+              card.remove();toast(next==='approved'?'Artwork made public':'Artwork hidden');}
+            catch(e){toast(e.message);button.disabled=false}
+          };
+          actions.append(button);
+        }
+        const remove=document.createElement('button');remove.className='btn secondary';
+        remove.textContent='DELETE';
+        remove.onclick=async()=>{
+          if(!confirm('Permanently delete this artwork?'))return;
+          remove.disabled=true;
+          try{await store.remove(row.id);await sync();card.remove();toast('Artwork deleted')}
+          catch(e){toast(e.message);remove.disabled=false}
         };
-        rowButtons.append(btn);
+        actions.append(remove);card.append(actions);list.append(card);
       }
-      card.append(rowButtons);list.append(card);
-    }
-    if(!rows.length)list.textContent='No submissions to review right now.';
-  }catch(e){$('adminStatus').textContent='Could not load reviews: '+e.message}
- }
- $('showApproved').onclick=async()=>{
-   if(!store.isAdmin)return;
-   const list=$('adminList');list.replaceChildren();
-   $('adminStatus').textContent='Loading published artworks…';
-   try{
-     const rows=await store.published();
-     $('adminStatus').textContent=rows.length+' approved artwork(s) (most recent 200).';
-     for(const row of rows){
-       const a=row.payload||{},card=document.createElement('article');
-       card.className='card';
-       const title=document.createElement('strong');
-       title.textContent=escapeTag(a.title||'Untitled',100);
-       const info=document.createElement('p');info.className='stat';
-       info.textContent='BY '+escapeTag(a.artist,60)+' · '+
-         escapeTag(row.spot_id,8).toUpperCase()+
-         ' · '+new Date(row.created_at).toLocaleDateString();
-       const desc=document.createElement('p');
-       desc.textContent=escapeTag(a.desc,500);
-       const btn=document.createElement('button');
-       btn.className='btn secondary';btn.textContent='REMOVE FROM MUSEUM';
-       btn.onclick=async()=>{
-         if(!confirm('Permanently delete this approved artwork from MAD?'))return;
-         btn.disabled=true;
-         try{await store.remove(row.id);await sync();card.remove();
-           toast('Artwork removed from shared museum');}
-         catch(e){btn.disabled=false;toast('Could not delete: '+e.message)}
-       };
-       card.append(title,info,desc,btn);list.append(card);
-     }
-     if(!rows.length)list.textContent='No published artworks yet.';
-   }catch(e){$('adminStatus').textContent='Could not load published works: '+e.message}
- };
- $('refreshPending').onclick=refreshReviews;
- return {status,refreshReviews};
+      if(!records.length)list.textContent='No artworks in this section.';
+    }catch(e){$('adminStatus').textContent='Could not load artworks: '+e.message}
+  }
+  $('showApproved').onclick=()=>renderList('approved');
+  $('refreshPending').onclick=()=>renderList('rejected');
+  return {status:refreshUI,refreshReviews:()=>renderList('approved')};
 }

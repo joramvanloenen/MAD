@@ -205,17 +205,34 @@ export function buildCellar(scene,{eco=false}={}){
     // Thin safety strips emphasize the correct tread orientation.
     brick(scene,.025,.004,stairWidth-.12,brass,x+step*.39,height+.032,stairZ);
   }
-  // Retaining walls contain the stair ONLY, not any exhibition wall slots.
-  // Their eastern opening is framed, so the way back upstairs is obvious.
-  for(const z of [3.06,5.78]){
-    brick(scene,4.55,2.83,.17,dressedStone,-17.25,1.415,z);
-    brick(scene,.18,2.85,.22,ribs,-14.98,1.425,z);
+  // The low retaining walls SLOPE with the stairs. Unlike the previous
+  // rectangular blocks, they do not form two giant walls at the landing.
+  const parapetProfile=new THREE.Shape();
+  parapetProfile.moveTo(-19.43,0);
+  parapetProfile.lineTo(-14.95,0);
+  parapetProfile.lineTo(-14.95,1.03);
+  parapetProfile.lineTo(-19.43,3.16);
+  parapetProfile.closePath();
+  const parapetGeo=new THREE.ExtrudeGeometry(parapetProfile,{
+    depth:.17,steps:1,bevelEnabled:false
+  });
+  for(const z of [3.01,5.66]){
+    const side=new THREE.Mesh(parapetGeo,dressedStone);
+    side.position.z=z;side.castShadow=true;side.receiveShadow=true;
+    scene.add(side);
+    const capCurve=new THREE.LineCurve3(
+      new THREE.Vector3(-14.95,1.055,z+.085),
+      new THREE.Vector3(-19.43,3.185,z+.085)
+    );
+    const railing=new THREE.Mesh(
+      new THREE.TubeGeometry(capCurve,8,.033,7,false),brass);
+    railing.castShadow=true;scene.add(railing);
   }
-  brick(scene,.25,.28,2.82,ribs,-14.98,2.88,stairZ);
-  // A small illuminated header, viewed as you approach the stair to leave.
+  // Conservation-style lamp under the threshold soffit.
   const exitLight=new THREE.PointLight(0xffc997,eco?7:9,4.3,2);
-  exitLight.position.set(-15.05,2.58,stairZ);scene.add(exitLight);
-  brick(scene,.034,.08,1.02,lightFace,-14.92,2.68,stairZ);
+  exitLight.position.set(-14.68,3.30,stairZ);scene.add(exitLight);
+  brick(scene,.55,.025,.30,brass,-14.64,3.52,stairZ);
+  brick(scene,.48,.008,.23,lightFace,-14.64,3.495,stairZ);
 
   // The room title is on a free, clearly visible stretch of the WEST wall,
   // NOT the south/north art walls or underneath a central pier.

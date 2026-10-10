@@ -129,7 +129,7 @@
  #editor .editorModeTabs [data-mode="clay"]::after{content:"Clay"}
  #editor .editorModeTabs [data-mode="mixed"]::after{content:"Mixed"}
  #editor .editorGrid{grid-template-columns:1fr;grid-template-rows:minmax(110px,1fr)
-   clamp(188px,32dvh,265px)}
+   clamp(205px,34dvh,270px)}
  #editor .editorWorkspace{padding:6px 8px}
  #editor #sculptView{border-radius:7px}
  #editor #voxelView{border-radius:7px}
@@ -173,7 +173,7 @@
  #editor .atelierTabs{margin:0 0 5px;gap:3px}
  #editor .atelierTab{padding:7px 1px;font-size:9px}
  #editor #mixedAddRow{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
- #editor #mixedAddRow button{min-height:26px;padding:4px 2px;font-size:9px}
+ #editor #mixedAddRow button{min-height:26px;padding:4px 2px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  #editor .atelierSection[data-atelier-section="materials"]>label{display:none}
  #editor #mixedFeedback{display:none}
  #editor .atelierSection label{margin:3px 0 1px}

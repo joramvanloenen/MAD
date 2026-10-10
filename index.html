@@ -129,7 +129,7 @@ function oldLocalArtworks(){
   try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}catch(e){return []}
 }
 const artworks=museumStore.enabled?[]:oldLocalArtworks();
-let gallerySyncVersion=0;
+let gallerySyncVersion=0,lastGallerySignature=null;
 async function syncPublicGallery(){
   if(!museumStore.enabled||!museumStore.client)return;
   const version=++gallerySyncVersion;
@@ -137,8 +137,19 @@ async function syncPublicGallery(){
     $('syncBtn').disabled=true;
     const remote=await museumStore.load();
     if(version!==gallerySyncVersion)return;
+    const signature=remote.map(a=>a.id+'|'+a.status+'|'+a.createdAt).join(';');
+    if(signature===lastGallerySignature)return;
+    lastGallerySignature=signature;
     artworks.length=0;artworks.push(...remote);
-    if(scene){objects=[];createRoom()}
+    if(scene){
+      // Updating someone else's artwork must not teleport the visitor.
+      const position=camera?.position?.clone(),savedYaw=yaw,savedPitch=pitch;
+      objects=[];createRoom();
+      if(position){
+        camera.position.copy(position);yaw=savedYaw;pitch=savedPitch;
+        camera.rotation.set(pitch,yaw,0);
+      }
+    }
   }catch(e){
     console.warn('Gallery sync unavailable',e);
     toast('Cloud gallery sync failed: '+e.message);

@@ -260,17 +260,38 @@ export class MixedMediaStudio {
     this._transform(p);this.onChange(this);
   }
   glue(){
-    const p=this.current();if(!p)return false;
-    const target=this.parts.find(q=>q!==p&&q.gluedTo!==p.id);
+    const p=this.current();if(!p||this.parts.length<2)return false;
+    // Glue to the previous piece in the component list, preserving its world
+    // pose. Descendants now follow their bonded parent when it is transformed.
+    const index=this.parts.indexOf(p);
+    const target=this.parts[index>0?index-1:index+1];
     if(!target)return false;
+    // Avoid cycles (which would otherwise break Three.js parenting).
+    let cursor=target;
+    while(cursor){
+      if(cursor===p)return false;
+      cursor=this.parts.find(q=>q.id===cursor.gluedTo);
+    }
+    this.group.updateMatrixWorld(true);
+    target.root.attach(p.root);
     p.gluedTo=target.id;
-    // Glue retains current placement and welds both part geometries into the
-    // same optimized output. This is an assembly bond, not Boolean CSG.
-    this.onChange(this);return true;
+    p.pos=p.root.position.toArray();
+    p.rot=[p.root.rotation.x,p.root.rotation.y,p.root.rotation.z];
+    p.scale=p.root.scale.toArray();
+    this.select(p.id);
+    return true;
   }
   remove(){
     const p=this.current();if(!p)return;
-    this.group.remove(p.root);
+    this.group.updateMatrixWorld(true);
+    for(const child of this.parts.filter(q=>q.gluedTo===p.id)){
+      this.group.attach(child.root);
+      child.gluedTo=null;
+      child.pos=child.root.position.toArray();
+      child.rot=[child.root.rotation.x,child.root.rotation.y,child.root.rotation.z];
+      child.scale=child.root.scale.toArray();
+    }
+    p.root.removeFromParent();
     p.root.traverse(o=>{o.geometry?.dispose();o.material?.dispose?.()});
     this.parts=this.parts.filter(q=>q!==p);
     this.simulations.delete(p.id);
@@ -395,7 +416,10 @@ export class MixedMediaStudio {
     for(const part of this.parts){
       part.root.updateMatrixWorld(true);
       const meshes=[];
-      part.root.traverse(o=>{if(o.isMesh&&o.geometry)meshes.push(o)});
+      part.root.traverse(o=>{
+        // Bonded child pieces have their own source-bake pass.
+        if(o.isMesh&&o.geometry&&o.userData.partId===part.id)meshes.push(o);
+      });
       for(const mesh of meshes){
         const geometry=mesh.geometry;
         if(!geometry.attributes.position)continue;
@@ -496,6 +520,12 @@ export class MixedMediaStudio {
       }
       this._transform(p);
     }
+    // Restore actual parent-child bonds after all the pieces exist.
+    for(const p of this.parts){
+      const parent=this.parts.find(q=>q.id===p.gluedTo);
+      if(parent)parent.root.add(p.root);
+    }
+    this.group.updateMatrixWorld(true);
     if(data.parts.length)this.select(clamp(data.selected??0,0,this.parts.length-1));
     this.tool=data.tool||'move';
   }

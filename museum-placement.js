@@ -17,12 +17,13 @@ export function viewFromSlot(slot){
   // the room at the north wall, negative Z at the south wall.
   const isWall=slot.type==='wall';
   const yaw=isWall&&slot.z>0?Math.PI:0;
-  const z=slot.z+(isWall ? Math.cos(yaw)*4.2 : 4.3);
+  const inVitrine=slot.type==='vitrine';
+  const z=slot.z+(isWall?Math.cos(yaw)*4.2:inVitrine?2.65:4.3);
   return {
     x:Math.max(-17.5,Math.min(17.5,slot.x)),
     y:1.7,
     z:Math.max(-10.6,Math.min(10.6,z)),
     yaw,
-    pitch:isWall?.285:.065
+    pitch:isWall?.285:inVitrine?-.17:.065
   };
 }

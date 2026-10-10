@@ -4,9 +4,9 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const TYPES=['wood','beam','laminate','metal','ceramic','found','coil','fabric'];
+const TYPES=['wood','beam','laminate','metal','ceramic','found','coil','fabric','paper'];
 const DEFAULTS={wood:'#ba8051',beam:'#946640',laminate:'#a87343',metal:'#8795a0',
-  ceramic:'#d58e76',found:'#b0c7c2',coil:'#b49b78',fabric:'#6c5977',paint:'#ff6655'};
+  ceramic:'#d58e76',found:'#b0c7c2',coil:'#b49b78',fabric:'#6c5977',paper:'#e2ccb3',paint:'#ff6655'};
 const COLOR=(s)=>new THREE.Color(s||'#ffffff');
 const MAX_PARTS=25,MAX_STAMPS=220,MAX_VERTS=45000,ROWS=13,COLS=15;
 const mediaMaterial=(kind)=>{
@@ -16,6 +16,7 @@ const mediaMaterial=(kind)=>{
     metal:{roughness:.36,metalness:.77},ceramic:{roughness:.34,metalness:.02},
     found:{roughness:.67,metalness:.12},coil:{roughness:.55,metalness:.27},
     fabric:{roughness:.96,metalness:0,side:THREE.DoubleSide},
+    paper:{roughness:.97,metalness:0,side:THREE.DoubleSide},
     paint:{roughness:.48,metalness:0,side:THREE.DoubleSide}
   }[kind]||{roughness:.8,metalness:0};
   return new THREE.MeshStandardMaterial({...prop,vertexColors:true});
@@ -92,6 +93,17 @@ function primitive(kind,cut='straight'){
     case 'ceramic':return new THREE.IcosahedronGeometry(.79,3);
     case 'found':return new THREE.DodecahedronGeometry(.79,1);
     case 'coil':return new THREE.TorusKnotGeometry(.53,.115,92,9,2,3);
+    case 'paper':{
+      // Irregular torn-paper silhouette: extremely thin, foldable in assembly.
+      const shape=new THREE.Shape();
+      shape.moveTo(-.92,-.7);
+      const boundary=[[-.4,-.76],[.25,-.68],[.93,-.74],[.90,-.12],
+        [.97,.56],[.41,.69],[-.2,.65],[-.89,.73],[-.82,.10],[-.92,-.7]];
+      for(const [x,y] of boundary)shape.lineTo(x,y);
+      const geo=new THREE.ExtrudeGeometry(shape,
+        {depth:.028,bevelEnabled:false,steps:1});
+      geo.translate(0,0,-.014);return geo;
+    }
     default:return new THREE.BoxGeometry(1,1,.22,8,8,1);
   }
 }

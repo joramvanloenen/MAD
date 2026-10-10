@@ -33,6 +33,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.m
 import { MuseumGI } from './gi.js';
 import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-archive2';
 import { buildDepotArchive } from './museum-depot.js?v=20261010-archive2';
+import { buildWhiteTransition, buildNorthWingPassage, buildNewWing,
+  buildStairToUpper, buildSecretEntrance, buildCellar, buildUpperGallery }
+  from './museum-expansion.js';
 import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js';
 import { makeArtworkInspector } from './museum-inspection.js';
@@ -51,7 +54,7 @@ const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   FORCED_LOW_POWER;
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
-let scene,camera,renderer,gi=null,environment=null,depotArchive=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
+let scene,camera,renderer,gi=null,environment=null,depotArchive=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,roomChanging=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
 $('cloudStatus').textContent=museumStore.enabled?'CLOUD · REVIEWED':'LOCAL ONLY';
 $('syncBtn').classList.toggle('hidden',!museumStore.enabled);
@@ -71,7 +74,28 @@ async function syncPublicGallery(){
   finally{$('syncBtn').disabled=false}
 }
 $('syncBtn').onclick=syncPublicGallery;
-const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0},...VITRINE_SPOTS];
+const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0},...VITRINE_SPOTS,
+{ id:'e1',type:'wall',zone:'wing',x:-12,z:-11.68,rot:0 },
+{ id:'e2',type:'wall',zone:'wing',x:-3,z:-11.68,rot:0 },
+{ id:'e3',type:'wall',zone:'wing',x:5,z:-11.68,rot:0 },
+{ id:'e4',type:'wall',zone:'wing',x:12,z:-11.68,rot:0 },
+{ id:'e5',type:'wall',zone:'wing',x:-12,z:11.68,rot:Math.PI },
+{ id:'e6',type:'wall',zone:'wing',x:-3,z:11.68,rot:Math.PI },
+{ id:'e7',type:'wall',zone:'wing',x:5,z:11.68,rot:Math.PI },
+{ id:'e8',type:'wall',zone:'wing',x:12,z:11.68,rot:Math.PI },
+{ id:'u1',type:'wall',zone:'upper',x:-11,z:-11.68,rot:0 },
+{ id:'u2',type:'wall',zone:'upper',x:-3,z:-11.68,rot:0 },
+{ id:'u3',type:'wall',zone:'upper',x:5,z:-11.68,rot:0 },
+{ id:'u4',type:'wall',zone:'upper',x:12,z:-11.68,rot:0 },
+{ id:'u5',type:'wall',zone:'upper',x:-10,z:11.68,rot:Math.PI },
+{ id:'u6',type:'wall',zone:'upper',x:-1,z:11.68,rot:Math.PI },
+{ id:'c1',type:'wall',zone:'cellar',x:-13,z:-11.68,rot:0 },
+{ id:'c2',type:'wall',zone:'cellar',x:-5,z:-11.68,rot:0 },
+{ id:'c3',type:'wall',zone:'cellar',x:4,z:-11.68,rot:0 },
+{ id:'c4',type:'wall',zone:'cellar',x:13,z:-11.68,rot:0 },
+{ id:'c5',type:'wall',zone:'cellar',x:-12,z:11.68,rot:Math.PI },
+{ id:'c6',type:'wall',zone:'cellar',x:-3,z:11.68,rot:Math.PI },
+{ id:'c7',type:'wall',zone:'cellar',x:6,z:11.68,rot:Math.PI }];
 const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6ba','#171a1e','#e2a0b8','#9b744a'];
 let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
@@ -211,7 +235,9 @@ function createRoom(){
     const materials=Array.isArray(o.material)?o.material:[o.material];
     for(const m of materials){m?.map?.dispose();m?.dispose()}
   });
-  scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#c6ccca');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer){
+  scene=new THREE.Scene();scene.background=new THREE.Color(room==='cellar'?'#15181c':
+  room==='depot'?'#c6ccca':'#b9bdb9');
+scene.fog=new THREE.Fog(scene.background,room==='cellar'?11:23,room==='cellar'?35:63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer){
   renderer=new THREE.WebGLRenderer({
     // Request native MSAA on mobile too; previous mobile mode switched it off.
     // ?safe=1 still disables it as a recovery path for weak GPUs.
@@ -234,7 +260,9 @@ function createRoom(){
 }
 // Slightly higher mobile render resolution to reduce remaining pixel stair-steps.
 renderer.setPixelRatio(Math.min(devicePixelRatio,
-  FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0xd7dcd8;
+  FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='cellar'?0x2a2929:
+  room==='depot'?0xd2d7d3:0xe2e1dc,0,-.17,0);scene.add(floor);
+const mat=room==='cellar'?0x303336:room==='depot'?0xd7dcd8:0xf2f1ea;
 // The east wall is physically divided around the archive door.
 for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],
   [.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]]){

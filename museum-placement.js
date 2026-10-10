@@ -5,9 +5,8 @@ export function findVacantSlot(slotId,slots,artworks,now=Date.now()){
   const slot=slots.find(s=>s.id===slotId);
   if(!slot)return {ok:false,reason:'This exhibition spot no longer exists.'};
   const occupied=artworks.some(a=>
-    a.spotId===slotId &&
-    Number.isFinite(a.createdAt) &&
-    now-a.createdAt < EXHIBITION_MS
+    a.spotId===slotId && Number.isFinite(a.createdAt) &&
+    (a.audience==='after-hours'||now-a.createdAt<EXHIBITION_MS)
   );
   if(occupied)return {ok:false,reason:'This exhibition spot has already been filled. Please select another.'};
   return {ok:true,slot};

@@ -261,7 +261,7 @@ scene.fog=new THREE.Fog(scene.background,room==='cellar'?11:23,room==='cellar'?3
 }
 // Slightly higher mobile render resolution to reduce remaining pixel stair-steps.
 renderer.setPixelRatio(Math.min(devicePixelRatio,
-  FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='cellar'?0x2a2929:
+  FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(room==='cellar'?0xbec0c4:0xeef1ed,0xb9a995,room==='cellar'?.22:.63));const sun=new THREE.DirectionalLight(0xffffff,room==='cellar'?.06:.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='cellar'?0x2a2929:
   room==='depot'?0xd2d7d3:0xe2e1dc,0,-.17,0);scene.add(floor);
 const mat=room==='cellar'?0x303336:room==='depot'?0xd7dcd8:0xf2f1ea;
 // Perimeter architecture has real openings where passageways attach.
@@ -304,7 +304,7 @@ if(room==='gallery'){
   environment.colliders.push(...upper.barriers);
   objects.push(upper.portal);
 }else if(room==='cellar'){
-  objects.push(buildCellar(scene));
+  objects.push(buildCellar(scene,{eco:MOBILE_SAFE}));
 }
 if(room==='gallery'||room==='depot'){
   try{
@@ -636,7 +636,16 @@ function interact(){
   if(o.kind==='zone'){transitionToRoom(o.to,{via:o.via||''});return;}
   if(o.kind==='secret'){
     toast('You found the hidden passage. After Hours may be unsettling.');
-    transitionToRoom('cellar',{via:'secret',dark:true});return;
+    const panel=o.panel,start=performance.now();
+    const swing=now=>{
+      if(!roomChanging||!panel)return;
+      const t=Math.min(1,(now-start)/650);
+      panel.rotation.y=-1.15*t;
+      panel.position.z=4.42-.58*t;
+      if(t<1)requestAnimationFrame(swing);
+    };
+    transitionToRoom('cellar',{via:'secret',dark:true});
+    requestAnimationFrame(swing);return;
   }
   if(o.kind==='flap'){openFlapEditor();return;}
   if(o.kind==='rack'){

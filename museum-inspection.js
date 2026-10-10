@@ -1,6 +1,6 @@
 // Orbitable close-up artwork viewer for MAD.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
-import {artMesh} from './art-presentation.js?v=20261010-mixed5';
+import {artMesh} from './art-presentation.js?v=20261010-mixed6';
 import {createVitrine,fitArtToVitrine} from './museum-vitrines.js';
 
 export function makeArtworkInspector(holder){

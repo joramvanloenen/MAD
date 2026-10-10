@@ -1416,6 +1416,102 @@ function releaseEditorRenderer(kind){
     voxels=new Map();
   }
 }
+function syncMixedEditorUI(studio){
+  if(!studio)return;
+  const selection=$('mixedParts'),part=studio.current();
+  const ids=studio.parts.map(p=>String(p.id));
+  const existing=[...selection.options].map(o=>o.value);
+  if(existing.join('|')!==ids.join('|')){
+    selection.replaceChildren();
+    for(const p of studio.parts){
+      const option=document.createElement('option');
+      option.value=String(p.id);
+      option.textContent=(p.id+1)+' · '+p.kind.toUpperCase()+
+        (p.gluedTo!==null?' · GLUED':'');
+      selection.append(option);
+    }
+  }
+  selection.value=part?String(part.id):'';
+  const pairs=[
+    ['mixedPosX',part?.pos[0]],['mixedPosY',part?.pos[1]],
+    ['mixedPosZ',part?.pos[2]],
+    ['mixedRotX',part?.rot[0]*180/Math.PI],
+    ['mixedRotY',part?.rot[1]*180/Math.PI],
+    ['mixedRotZ',part?.rot[2]*180/Math.PI],
+    ['mixedScale',part?.scale[0]]
+  ];
+  for(const [id,value] of pairs){
+    $(id).disabled=!part;
+    if(part&&document.activeElement!==$(id))$(id).value=Number(value).toFixed(2);
+  }
+  $('mixedSaw').disabled=!part||part.kind!=='wood';
+  $('mixedDrape').disabled=!part||part.kind!=='fabric';
+  $('mixedGlue').disabled=!part||studio.parts.length<2;
+  $('mixedRemove').disabled=!part;
+  $('mixedCut').value=part?.cut||'straight';
+  document.querySelectorAll('[data-mixed-tool]').forEach(b=>
+    b.classList.toggle('selected',b.dataset.mixedTool===studio.tool));
+  $('mixedFeedback').textContent=studio.getSummary()+
+    (part?' · SELECTED: '+part.kind.toUpperCase()+
+      (part.gluedTo!==null?' (GLUED)':''):'')+
+    ' · Up to 25 pieces and 220 paint marks per part.';
+}
+$('mixedParts').onchange=()=>mixedStudio?.select(Number($('mixedParts').value));
+document.querySelectorAll('[data-mixed-add]').forEach(button=>{
+  button.onclick=()=>{
+    if(!mixedStudio)return;
+    if(!mixedStudio.add(button.dataset.mixedAdd))
+      toast('Maximum 25 pieces. Bake an artwork or remove some components.');
+  };
+});
+document.querySelectorAll('[data-mixed-tool]').forEach(button=>{
+  button.onclick=()=>{
+    if(!mixedStudio)return;
+    mixedStudio.setTool(button.dataset.mixedTool);
+    syncMixedEditorUI(mixedStudio);
+  };
+});
+$('mixedRemove').onclick=()=>mixedStudio?.remove();
+$('mixedGlue').onclick=()=>{
+  if(!mixedStudio?.glue())toast('Add two components first.');
+  else toast('Assembly connection created. Both pieces bake together.');
+};
+$('mixedSaw').onclick=()=>mixedStudio?.setCut($('mixedCut').value);
+$('mixedPaintColor').oninput=()=>{
+  mixedStudio?.setPaintColor($('mixedPaintColor').value);
+};
+$('mixedBrush').oninput=()=>{
+  mixedStudio?.setBrushSize($('mixedBrush').value);
+};
+$('mixedDrape').onclick=()=>{
+  if(!mixedStudio?.drape())toast('Select a cloth component first.');
+  else toast('Fabric released: watch it fall and settle over the assembly.');
+};
+$('mixedFreeze').onclick=()=>{
+  mixedStudio?.freezeCloth();
+  if(mixedStudio)toast('Fabric frozen as stable sculpture geometry.');
+};
+$('mixedBake').onclick=()=>{
+  if(!mixedStudio)return;
+  try{
+    const mesh=mixedStudio.bake();
+    $('mixedFeedback').textContent='BAKE READY · '+mesh.vertices+
+      ' indexed vertices · '+mesh.faces+' triangles · '+
+      mesh.groups.length+' material groups. All cloth is frozen.';
+  }catch(e){toast('Bake error: '+e.message)}
+};
+for(const [name,axis] of [
+  ['mixedPosX','pos.0'],['mixedPosY','pos.1'],['mixedPosZ','pos.2'],
+  ['mixedRotX','rot.0'],['mixedRotY','rot.1'],['mixedRotZ','rot.2']
+]){
+  $(name).addEventListener('input',()=>{
+    mixedStudio?.setTransform(axis,Number($(name).value));
+  });
+}
+$('mixedScale').addEventListener('input',()=>{
+  const s=Number($('mixedScale').value);
+  for(let axis=0;axis<3;axis++)mixedStudio?.setTransform('scale.'+axis,s);
+});
 function updateEditorStages(){
   const wall=editingWall();
   const inVitrine=activeSpot?.type==='vitrine';

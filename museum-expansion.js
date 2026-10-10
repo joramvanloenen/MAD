@@ -17,10 +17,10 @@ function trigger(scene,w,h,d,x,y,z){
   }),x,y,z);o.castShadow=false;o.receiveShadow=false;
   return o;
 }
-function wallTitle(scene,text,x,y,z,rotationY=0){
+function wallTitle(scene,text,x,y,z,rotationY=0,ink='#303634'){
   const c=document.createElement('canvas');c.width=1024;c.height=192;
   const ctx=c.getContext('2d');ctx.clearRect(0,0,1024,192);
-  ctx.font='700 65px Arial';ctx.fillStyle='#303634';ctx.textAlign='center';
+  ctx.font='700 65px Arial';ctx.fillStyle=ink;ctx.textAlign='center';
   ctx.fillText(text,512,125);
   const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
   const o=new THREE.Mesh(new THREE.PlaneGeometry(3.5,.66),
@@ -185,7 +185,7 @@ export function buildCellar(scene,{eco=false}={}){
     const x=-17+i*.42;
     brick(scene,.43,(i+1)*.25,2.4,concrete,x,(i+1)*.125,4.4);
   }
-  wallTitle(scene,'AFTER HOURS',0,3.05,-11.62);
+  wallTitle(scene,'AFTER HOURS',0,3.05,-11.62,0,'#c1b5a3');
   return {mesh:trigger(scene,.40,2.6,2.3,-17.15,1.4,4.4),
     kind:'zone',to:'gallery',via:'stairs-up'};
 }

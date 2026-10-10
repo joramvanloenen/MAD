@@ -71,8 +71,14 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
     scene.add(mk(38.4,.17,.09,trim,0,.105,z));
     scene.add(mk(38.4,.045,.09,black,0,7.69,z));
   }
+  // West wall has continuous skirting; the east wall must have a REAL
+  // 3.22 m gap where the recessed Depot door opens (Z -1.61 to +1.61).
+  scene.add(mk(.09,.17,23.2,trim,-19.2,.105,0));
+  for(const [zStart,zEnd] of [[-11.6,-1.61],[1.61,11.6]]){
+    scene.add(mk(.09,.17,zEnd-zStart,trim,19.2,.105,(zStart+zEnd)/2));
+  }
+  // The ceiling trim is above the doorway and stays continuous.
   for(const x of [-19.2,19.2]){
-    scene.add(mk(.09,.17,23.2,trim,x,.105,0));
     scene.add(mk(.09,.045,23.2,black,x,7.69,0));
   }
 

@@ -863,7 +863,7 @@ $('paintPattern').onclick=()=>{
 };
 for(let c of colors){let b=document.createElement('button');b.className='swatch'+(c===color?' selected':'');b.style.background=c;b.title=c;b.onclick=()=>{color=c;document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('selected',x===b));refreshSculpt()};$('swatches').append(b)}
 
-let sculptBase=null,sculptWall=null,voxelWall=null,voxelBase=null,clayField=null,clayMesh=null,clayTool='add',clayLast=0,cachedVoxelCells=null;
+let sculptBase=null,sculptWall=null,sculptVitrinePreview=null,voxelWall=null,voxelBase=null,voxelVitrinePreview=null,clayField=null,clayMesh=null,clayTool='add',clayLast=0,cachedVoxelCells=null;
 let sculptOrbitX=0,sculptOrbitY=0,voxelOrbitX=0,voxelOrbitY=0;
 const editingWall=()=>activeSpot?.type==='wall';
 const reliefDepth=()=>.08+(Number($('reliefDepth').value)/100)*.68;
@@ -882,6 +882,11 @@ function initSculpt(){
   sculptRenderer.domElement.style.height='100%';
   sculptBase=box(2.6,.15,2.6,0x777e79,0,-1.5,0);
   sculptScene.add(sculptBase);
+  sculptVitrinePreview=new THREE.Group();
+  createVitrine(sculptVitrinePreview);
+  sculptVitrinePreview.position.y=-1.07;
+  sculptVitrinePreview.visible=false;
+  sculptScene.add(sculptVitrinePreview);
   // Real wall with its exposed face exactly at Z=0 (behind the relief).
   sculptWall=box(3.5,3.5,.24,0xd3d6d0,0,0,-.12);
   sculptWall.visible=false;
@@ -948,6 +953,10 @@ function refreshSculpt(){
   const geo=geometryFor(a);
   if(editingWall())constrainReliefGeometry(geo,reliefDepth());
   sculptMesh=new THREE.Mesh(geo,sculptureMaterial({color,materialPreset:$('surfaceMat').value}));
+  if(activeSpot?.type==='vitrine'){
+    sculptMesh.scale.setScalar(.42);
+    sculptMesh.position.y=.19;
+  }
   sculptScene.add(sculptMesh);
 }
 ['shape','complexity','distortion','reliefDepth','surfaceMat'].forEach(id=>$(id).addEventListener('input',refreshSculpt));
@@ -966,6 +975,10 @@ function refreshClayMesh(){
   mat.vertexColors=true;mat.needsUpdate=true;
   clayMesh=new THREE.Mesh(clayField.geometry(1),mat);
   clayMesh.castShadow=true;clayMesh.visible=mode==='clay';
+  if(activeSpot?.type==='vitrine'){
+    clayMesh.scale.setScalar(.43);
+    clayMesh.position.y=.19;
+  }
   sculptScene.add(clayMesh);
 }
 function paintClayAt(e,force=false){
@@ -1015,6 +1028,11 @@ function initVoxels(){
   voxelScene.add(voxelWall);
   voxelBase=box(9.7,.1,9.7,0x8a918d,0,-2.5,0);
   voxelScene.add(voxelBase);
+  voxelVitrinePreview=new THREE.Group();
+  createVitrine(voxelVitrinePreview);
+  voxelVitrinePreview.position.y=-1.07;
+  voxelVitrinePreview.visible=false;
+  voxelScene.add(voxelVitrinePreview);
   voxelRenderer=new THREE.WebGLRenderer({antialias:true});
   voxelRenderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   $('voxelView').append(voxelRenderer.domElement);
@@ -1139,7 +1157,7 @@ function releaseEditorRenderer(kind){
     sculptRenderer.domElement.remove();
     sculptRenderer=null;
     sculptScene=null;sculptMesh=null;clayMesh=null;
-    sculptWall=null;sculptBase=null;sculptCam=null;
+    sculptWall=null;sculptBase=null;sculptVitrinePreview=null;sculptCam=null;
   }
   if(kind==='voxel' && voxelRenderer){
     cachedVoxelCells=[...voxels.values()].map(mesh=>mesh.userData.grid.slice());
@@ -1147,28 +1165,46 @@ function releaseEditorRenderer(kind){
     voxelRenderer.forceContextLoss();
     voxelRenderer.domElement.remove();
     voxelRenderer=null;voxelScene=null;voxelRoot=null;
-    voxelWall=null;voxelBase=null;voxelCam=null;
+    voxelWall=null;voxelBase=null;voxelVitrinePreview=null;voxelCam=null;
     voxels=new Map();
   }
 }
 function updateEditorStages(){
   const wall=editingWall();
+  const inVitrine=activeSpot?.type==='vitrine';
   if(sculptWall && sculptBase && sculptCam){
     sculptWall.visible=wall;
     sculptWall.userData.trim.visible=wall;
-    sculptBase.visible=!wall;
+    sculptBase.visible=!wall&&!inVitrine;
+    if(sculptVitrinePreview)sculptVitrinePreview.visible=inVitrine;
     sculptBase.scale.y=activeSpot?.type==='plinth'?6:1;
     sculptBase.position.y=activeSpot?.type==='plinth'?-1.48:-1.15;
+    if(sculptMesh){
+      sculptMesh.scale.setScalar(inVitrine?.42:1);
+      sculptMesh.position.y=inVitrine?.19:0;
+    }
+    if(clayMesh){
+      clayMesh.scale.setScalar(inVitrine?.43:1);
+      clayMesh.position.y=inVitrine?.19:0;
+    }
     if(wall)sculptCam.position.set(.35,.25,4.7);
+    else if(inVitrine)sculptCam.position.set(2.1,1.3,2.7);
     else sculptCam.position.set(3,2.4,4.2);
     sculptCam.lookAt(0,0,wall?.25:0);
   }
   if(voxelWall && voxelBase && voxelCam){
     voxelWall.visible=wall;
-    voxelBase.visible=!wall;
+    voxelBase.visible=!wall&&!inVitrine;
+    if(voxelVitrinePreview)voxelVitrinePreview.visible=inVitrine;
     voxelBase.scale.set(.32,activeSpot?.type==='plinth'?8:1,.32);
     voxelBase.position.y=activeSpot?.type==='plinth'?-.9:-.55;
-    voxelCam.position.set(wall?.8:5,wall?.5:4,wall?10:6);
+    if(voxelRoot){
+      voxelRoot.scale.setScalar(inVitrine?.22:1);
+      voxelRoot.position.y=inVitrine?-.16:0;
+    }
+    if(wall)voxelCam.position.set(.8,.5,10);
+    else if(inVitrine)voxelCam.position.set(3.2,2.2,3.8);
+    else voxelCam.position.set(5,4,6);
     voxelCam.lookAt(0,0,0);
   }
 }

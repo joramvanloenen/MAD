@@ -4,14 +4,15 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-const TYPES=['wood','beam','metal','ceramic','found','coil','fabric'];
-const DEFAULTS={wood:'#ba8051',beam:'#946640',metal:'#8795a0',
+const TYPES=['wood','beam','laminate','metal','ceramic','found','coil','fabric'];
+const DEFAULTS={wood:'#ba8051',beam:'#946640',laminate:'#a87343',metal:'#8795a0',
   ceramic:'#d58e76',found:'#b0c7c2',coil:'#b49b78',fabric:'#6c5977',paint:'#ff6655'};
 const COLOR=(s)=>new THREE.Color(s||'#ffffff');
 const MAX_PARTS=25,MAX_STAMPS=220,MAX_VERTS=45000,ROWS=13,COLS=15;
 const mediaMaterial=(kind)=>{
   const prop={
     wood:{roughness:.86,metalness:0},beam:{roughness:.84,metalness:0},
+    laminate:{roughness:.89,metalness:0},
     metal:{roughness:.36,metalness:.77},ceramic:{roughness:.34,metalness:.02},
     found:{roughness:.67,metalness:.12},coil:{roughness:.55,metalness:.27},
     fabric:{roughness:.96,metalness:0,side:THREE.DoubleSide},
@@ -64,6 +65,29 @@ function primitive(kind,cut='straight'){
   switch(kind){
     case 'wood':return woodShape(cut);
     case 'beam':return new THREE.BoxGeometry(.40,2.4,.44,4,18,4);
+    case 'laminate':{
+      // 48 visible organic stacked contours, inspired by carved / printed
+      // laminated wooden sculptures. The geometry itself has undulating layers.
+      const points=[];
+      for(let i=0;i<=48;i++){
+        const t=i/48,y=(t-.5)*2.35;
+        const envelope=Math.pow(Math.sin(Math.PI*t),.47);
+        const rings=.06*Math.sin(t*48*Math.PI);
+        const swell=.25*Math.sin(t*5*Math.PI+.7);
+        const radius=Math.max(0,.04+envelope*(.53+swell+rings));
+        points.push(new THREE.Vector2(radius,y));
+      }
+      const geo=new THREE.LatheGeometry(points,28);
+      const attr=geo.attributes.position;
+      for(let i=0;i<attr.count;i++){
+        const x=attr.getX(i),y=attr.getY(i),z=attr.getZ(i);
+        const angle=Math.atan2(z,x);
+        const wave=.10*Math.sin(y*5+angle*3);
+        attr.setXYZ(i,x*(1+wave)+.12*Math.sin(y*2.9),
+          y,z*(1+wave)+.12*Math.cos(y*3.2));
+      }
+      geo.computeVertexNormals();return geo;
+    }
     case 'metal':return new THREE.CylinderGeometry(.25,.36,2.0,16,8);
     case 'ceramic':return new THREE.IcosahedronGeometry(.79,3);
     case 'found':return new THREE.DodecahedronGeometry(.79,1);
@@ -439,7 +463,7 @@ export class MixedMediaStudio {
           const v=idx?idx.getX(i):i;
           pos.fromBufferAttribute(attr,v).applyMatrix4(mesh.matrixWorld);
           normal.fromBufferAttribute(nAttr,v).applyMatrix3(normalMatrix).normalize();
-          const grain=(kind==='wood'||kind==='beam')?
+          const grain=(kind==='wood'||kind==='beam'||kind==='laminate')?
             .78+.16*Math.sin(pos.y*21+Math.sin(pos.x*8)*.8):1;
           dest.push([pos.x,pos.y,pos.z,normal.x,normal.y,normal.z,
             clamp(rgb.r*grain,0,1),clamp(rgb.g*grain,0,1),

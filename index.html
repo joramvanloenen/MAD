@@ -143,7 +143,10 @@ const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-
 { id:'c4',type:'wall',zone:'cellar',x:13,z:-11.68,rot:0 },
 { id:'c5',type:'wall',zone:'cellar',x:-12,z:11.68,rot:Math.PI },
 { id:'c6',type:'wall',zone:'cellar',x:-3,z:11.68,rot:Math.PI },
-{ id:'c7',type:'wall',zone:'cellar',x:6,z:11.68,rot:Math.PI }];
+{ id:'c7',type:'wall',zone:'cellar',x:6,z:11.68,rot:Math.PI },
+{ id:'c8',type:'wall',zone:'cellar',x:19.22,z:-5.9,rot:-Math.PI/2 },
+{ id:'c9',type:'wall',zone:'cellar',x:19.22,z:5.9,rot:-Math.PI/2 },
+{ id:'c10',type:'wall',zone:'cellar',x:-19.22,z:-7.15,rot:Math.PI/2 }];
 const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6ba','#171a1e','#e2a0b8','#9b744a'];
 let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
@@ -322,6 +325,13 @@ if(room==='gallery'){
   for(const [len,z] of [[15.1,-4.45],[6.25,8.875]])
     scene.add(box(.45,8,len,mat,-19.5,4,z));
   scene.add(box(.45,5.28,2.65,mat,-19.5,5.36,4.425));
+}else if(room==='cellar'){
+  scene.add(box(39,8,.45,mat,0,4,-12));
+  // A real west-wall portal aligns with the ascending cellar stairs.
+  // It replaces the wall which used to block the staircase at its top.
+  for(const [length,z] of [[15.02,-4.49],[6.18,8.91]])
+    scene.add(box(.45,8,length,mat,-19.5,4,z));
+  scene.add(box(.45,5.05,2.80,mat,-19.5,5.475,4.42));
 }else{
   scene.add(box(39,8,.45,mat,0,4,-12));
   scene.add(box(.45,8,24,mat,-19.5,4,0));
@@ -628,9 +638,12 @@ function updateTarget(){
     prompt.textContent=room==='gallery'?'E · THROUGH TO THE DEPOT':
       room==='depot'?'E · RETURN TO GALLERY':'E · BACK TO MAIN GALLERY';
   else if(interactTarget.kind==='zone')
-    prompt.textContent=interactTarget.via?.startsWith('stairs')
-      ? 'E · '+(interactTarget.to==='upper'?'ASCEND TO UPPER GALLERY':'DESCEND THE STAIRS')
-      : 'E · ENTER '+interactTarget.to.toUpperCase();
+    prompt.textContent=interactTarget.via==='stairs-up'
+      ? (interactTarget.to==='upper'?'E · ASCEND TO UPPER GALLERY':
+        'E · CLIMB THE STAIRS · RETURN TO GALLERY')
+      : interactTarget.via==='stairs-down'
+        ? 'E · DESCEND THE STAIRS'
+        : 'E · ENTER '+interactTarget.to.toUpperCase();
   else if(interactTarget.kind==='secret')
     prompt.textContent='E · OPEN THE UNMARKED DOOR';
   else if(interactTarget.kind==='rack')
@@ -671,7 +684,7 @@ function transitionToRoom(destination,{via='',dark=false}={}){
       depot:{x:16.35,z:.05,yaw:Math.PI/2},
       wing:from==='upper'?{x:14.6,z:5.75,yaw:0}:{x:15.5,z:8.1,yaw:0},
       upper:{x:15.5,z:5.75,yaw:0},
-      cellar:{x:-15.7,z:4.42,yaw:-Math.PI/2}
+      cellar:{x:-13.35,z:4.42,yaw:-Math.PI/2}
     }[destination]||{x:0,z:8,yaw:0};
     camera.position.set(spawn.x,1.7,spawn.z);
     yaw=spawn.yaw;pitch=0;camera.rotation.set(0,yaw,0);

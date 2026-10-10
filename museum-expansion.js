@@ -169,8 +169,8 @@ export function buildCellar(scene){
       brick(scene,.45,.10,.35,gold,x,3.04,z);
     }
   }
-  for(const [x,z,seed] of [[-13,-11.5,5],[-6,-11.5,22],[2,-11.5,13],
-     [10,-11.5,37]]){
+  for(const [x,z,seed] of [[-9,-11.5,5],[-1,-11.5,22],[8,-11.5,13],
+     [16,-11.5,37]]){
     cellarPainting(scene,x,1.75,z+.16,seed);
   }
   // Atmospheric curtain in a far alcove and irregular plinth forms.

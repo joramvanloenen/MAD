@@ -28,6 +28,7 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI q
 ## Project layout
 
 - `museum-environment.js`: connected galleries, wood PBR floor, track fixtures, lights and furniture.
+- `museum-depot.js`: 20 sliding white-metal mesh picture racks guided by floor and ceiling rails. Archived paintings and wall reliefs mount on the sliding frames (up to 80); E/USE pulls a rack out or returns it. Other artworks remain on separate compact archive stands. Collection navigation opens the appropriate rack. Rack collision locations update as they move.
 - `museum-vitrines.js`: six interactive protective glass display cases (V1–V6), including the original static showcase location, fitted artwork placement, small exhibit plaques and collision volumes. Works can be painted, sculpted, voxel-built or clay-sculpted; completed works are scaled to fit safely inside the glass. A showcase preview appears in the 3D editors, and archived cases are preserved in the Depot.
 - `gi.js`: directional multi-bounce irradiance probe approximation.
 - `art-presentation.js`: gallery frames, artwork dimensions, PBR materials.

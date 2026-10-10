@@ -113,7 +113,7 @@ export function buildStairToUpper(scene){
 export function buildSecretEntrance(scene){
   const m=material(0xe9e8e2,.95),outline=material(0xbbb8b0,.6);
   // Real hole is cut in index.html's west wall, this flush pivot closes it.
-  brick(scene,.14,2.65,2.55,m,-19.28,1.325,4.42);
+  const panel=brick(scene,.14,2.65,2.55,m,-19.28,1.325,4.42);
   for(const z of [3.13,5.71])
     brick(scene,.03,2.71,.02,outline,-19.19,1.36,z);
   brick(scene,.03,.025,2.58,outline,-19.19,2.68,4.42);
@@ -129,7 +129,7 @@ export function buildSecretEntrance(scene){
   for(const z of [3.16,5.67])
     brick(scene,6.7,3.0,.16,cellarStone,-23.7,-.65,z);
   return {mesh:trigger(scene,.15,2.45,2.2,-19.08,1.33,4.42),
-    kind:'secret',to:'cellar'};
+    kind:'secret',to:'cellar',panel};
 }
 function cellarPainting(scene,x,y,z,seed){
   const c=document.createElement('canvas');c.width=240;c.height=320;
@@ -154,19 +154,20 @@ function cellarPainting(scene,x,y,z,seed){
     new THREE.MeshBasicMaterial({map:tex}));
   art.position.set(x,y,z+.07);scene.add(art);
 }
-export function buildCellar(scene){
+export function buildCellar(scene,{eco=false}={}){
   // Cellar is a separate subterranean gallery scene with vaulted low ceiling,
   // stone walls, warm conservation lamps and mysterious abstract study works.
   const info=material(0x7e766c,.8);
   for(const z of [-11.72,11.72])brick(scene,38,.35,.2,cellarStone,0,3.45,z);
   brick(scene,38,.42,23.5,cellarStone,0,3.9,0);
-  for(const x of [-14,-7,0,7,14]){
+  for(const [xi,x] of [-14,-7,0,7,14].entries()){
     brick(scene,.4,3.7,.52,cellarStone,x,1.8,-11.45);
     brick(scene,.4,3.7,.52,cellarStone,x,1.8,11.45);
-    for(const z of [-8,0,8]){
-      const l=new THREE.PointLight(0xffbe77,8,6,2);
-      l.position.set(x,2.9,z);scene.add(l);
+    for(const [zi,z] of [-8,0,8].entries()){
       brick(scene,.45,.10,.35,gold,x,3.04,z);
+      if(eco&&(xi%2!==0||zi===1))continue;
+      const l=new THREE.PointLight(0xffbe77,eco?10:8,6,2);
+      l.position.set(x,2.9,z);scene.add(l);
     }
   }
   for(const [x,z,seed] of [[-9,-11.5,5],[-1,-11.5,22],[8,-11.5,13],

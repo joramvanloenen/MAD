@@ -70,14 +70,14 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 </script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
-import { MuseumGI } from './gi.js';
-import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-wing6';
+import { StaticMuseumLighting } from './static-lightmap.js?v=static1';
+import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-light1';
 import { buildDepotArchive } from './museum-depot.js?v=20261010-expansion3';
 import { buildWhiteTransition, buildNorthWingPassage, buildWingArrivalCorridor, buildNewWing,
   buildStairToUpper, buildSecretEntrance, buildCellar, buildUpperGallery }
-  from './museum-expansion.js?v=20261010-wing6';
+  from './museum-expansion.js?v=20261010-light1';
 import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
-import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js?v=20261010-mixed6';
+import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js?v=20261010-voxel3';
 import { MixedMediaStudio } from './mixed-media.js?v=20261010-mixed6';
 import { installArtworkEditorLayout, setEditorPane, syncEditorToolMode } from './editor-layout.js?v=20261010-editor2';
 import { makeArtworkInspector } from './museum-inspection.js';
@@ -86,7 +86,7 @@ import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessag
 import {findVacantSlot, viewFromSlot} from './museum-placement.js?v=20261010-cellar5';
 import { ClayField } from './clay-sculpt.js';
 import { MuseumStore } from './museum-store.js';
-import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js';
+import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js?v=20261010-voxel3';
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
 installArtworkEditorLayout();
 const museumAudio=new MuseumAudio();
@@ -150,7 +150,7 @@ const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-
 const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6ba','#171a1e','#e2a0b8','#9b744a'];
 let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
-function box(w,h,d,col,x=0,y=0,z=0,material){let mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material||new THREE.MeshStandardMaterial({color:col,roughness:.83}));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;return mesh}
+function box(w,h,d,col,x=0,y=0,z=0,material){let mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material||new THREE.MeshStandardMaterial({color:col,roughness:.83}));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.madStatic=true;return mesh}
 function showRenderError(message){
   const el=document.getElementById('bootStatus');
   if(!el){
@@ -401,19 +401,12 @@ if(room!=='depot'){
 }
 camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
   try{
-    // The six sampler3D GI uniforms plus large gallery light arrays can
-    // exceed mobile fragment limits. Mobile uses cheap hemispherical bounce
-    // illumination instead; do not compile the probe shaders on mobile.
-    if(!MOBILE_SAFE && renderer.capabilities.isWebGL2 && (room==='gallery'||room==='depot')){
-      gi=new MuseumGI({
-        renderer,room,
-        slots:room==='gallery'?slots.filter(s=>!s.zone):slots,
-        artworks:room==='gallery'?artworks.filter(a=>a.audience!=='after-hours'):artworks
-      });
-      gi.decorateScene(scene);
-    }
+    // Read the committed static RGB565 lightmap atlas for this room.
+    // No probes, ray samples, noise or per-frame GI texture uploads.
+    gi=new StaticMuseumLighting({room});
+    gi.decorateScene(scene);
   }catch(error){
-    console.warn('MAD GI unavailable, continuing with standard lighting',error);
+    console.warn('Static museum lightmap unavailable; using scene lights only',error);
     gi?.dispose();gi=null;
   }
   refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':
@@ -764,7 +757,7 @@ if(depotDoorLeaf){
   const goal=nearby?-1.14:0;
   depotDoorLeaf.rotation.y+=(goal-depotDoorLeaf.rotation.y)*.08;
 }
-depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!roomChanging&&!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;const inEastHall=room!=='cellar'&&camera.position.x>17.9&&Math.abs(camera.position.z)<1.32;
+depotArchive?.update(now);splitFlap?.update(now);/* Fixed lightmaps have no runtime update or raytracing cost. */let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!roomChanging&&!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;const inEastHall=room!=='cellar'&&camera.position.x>17.9&&Math.abs(camera.position.z)<1.32;
 camera.position.x=clamp(camera.position.x,-18.3,inEastHall?26.15:18.3);
 const inNorthHall=room==='gallery'&&camera.position.x>14.3&&
   camera.position.x<17.75&&camera.position.z< -10.9;
@@ -984,19 +977,17 @@ function visitArtwork(a){
 }
 function refreshGiUI(){
   const state=gi?.mode??'OFF';
-  $('giBtn').textContent=MOBILE_SAFE?'GI: MOBILE':'GI: '+state;
-  $('giBtn').classList.toggle('active',state!=='OFF');
-  $('giBtn').title='Realtime directional multi-bounce irradiance probes · G to toggle';
+  $('giBtn').textContent=state==='BAKED'?'LIGHT: BAKED':'LIGHT: OFF';
+  $('giBtn').classList.toggle('active',state==='BAKED');
+  $('giBtn').title='Saved static global illumination lightmap · G to toggle';
   const status=$('giStatus');
-  if(status)status.textContent=MOBILE_SAFE?'MOBILE · LIGHTWEIGHT LIGHTING':'INDIRECT LIGHT · '+state;
+  if(status)status.textContent=state==='BAKED'?'STATIC GLOBAL ILLUMINATION':'SCENE LIGHTS ONLY';
 }
 function cycleGi(){
-  if(MOBILE_SAFE){toast('Mobile lighting mode: GI ray sampling is disabled to keep the 3D gallery running.');return}
-  if(!gi?.enabled){toast('This browser cannot run the WebGL2 GI renderer.');return}
+  if(!gi?.enabled){toast('Static lightmap asset unavailable.');return}
   const state=gi.cycleQuality();
-  renderer.setPixelRatio(Math.min(devicePixelRatio,state==='HIGH'?1.45:1.1));
   refreshGiUI();
-  toast('Global illumination: '+state);
+  toast(state==='BAKED'?'Baked lightmaps enabled':'Baked lightmaps disabled');
 }
 $('giBtn').onclick=cycleGi;
 $('mobileMenuBtn').onclick=()=>{

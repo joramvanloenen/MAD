@@ -102,7 +102,8 @@ import { MuseumAudio } from './museum-audio.js';
 import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js?v=20261010-expansion3';
 import {findVacantSlot, viewFromSlot} from './museum-placement.js?v=20261010-cellar5';
 import { ClayField } from './clay-sculpt.js';
-import { MuseumStore } from './museum-store.js';
+import { MuseumStore } from './museum-store.js?v=auth2';
+import { installAccountUI } from './museum-account-ui.js?v=auth2';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js?v=20261010-voxel3';
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
 installArtworkEditorLayout();
@@ -115,25 +116,31 @@ const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
 let scene,camera,renderer,gi=null,environment=null,depotArchive=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,roomChanging=false,mixedStudio=null,mixedDraft=null,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,voxelPaintMode=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
-const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
-$('cloudStatus').textContent=museumStore.enabled?'CLOUD · REVIEWED':'LOCAL ONLY';
-$('syncBtn').classList.toggle('hidden',!museumStore.enabled);
+const storageKey='mad-artworks-v1';
+// The configured cloud is authoritative. Keep old browser-only art separately
+// for the explicit account "Upload my older local artworks" action.
+function oldLocalArtworks(){
+  try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}catch(e){return []}
+}
+const artworks=museumStore.enabled?[]:oldLocalArtworks();
+let gallerySyncVersion=0;
 async function syncPublicGallery(){
-  if(!museumStore.enabled)return;
+  if(!museumStore.enabled||!museumStore.client)return;
+  const version=++gallerySyncVersion;
   try{
     $('syncBtn').disabled=true;
     const remote=await museumStore.load();
-    const local=JSON.parse(localStorage.getItem(storageKey)||'[]');
-    const ids=new Set(remote.map(a=>a.id));
-    artworks.length=0;
-    artworks.push(...remote);
-    for(const a of local)if(!ids.has(a.id))artworks.push(a);
-    objects=[];createRoom();
-    toast('Gallery synced · '+remote.length+' approved public artworks');
-  }catch(e){console.warn('Cloud sync unavailable',e);toast('Cloud connection unavailable — showing locally saved artworks.')}
-  finally{$('syncBtn').disabled=false}
+    if(version!==gallerySyncVersion)return;
+    artworks.length=0;artworks.push(...remote);
+    if(scene){objects=[];createRoom()}
+  }catch(e){
+    console.warn('Gallery sync unavailable',e);
+    toast('Cloud gallery sync failed: '+e.message);
+  }finally{if(version===gallerySyncVersion)$('syncBtn').disabled=false}
 }
 $('syncBtn').onclick=syncPublicGallery;
+installAccountUI({store:museumStore,show,hide,toast,
+  sync:syncPublicGallery,storageKey});
 const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0},...VITRINE_SPOTS,
 { id:'e1',type:'wall',zone:'wing',x:-12,z:-11.68,rot:0 },
 { id:'e2',type:'wall',zone:'wing',x:-3,z:-11.68,rot:0 },
@@ -1671,15 +1678,23 @@ function artworkDetailsValid(){
 }
 function updatePublishState(){
   const valid=artworkDetailsValid();
-  $('publish').disabled=!valid;
-  $('publishHint').textContent=valid
-    ? 'Ready to exhibit — your title and description will appear on the museum label.'
-    : 'Required: give your artwork a title and description before placing it.';
+  const loginNeeded=museumStore.enabled&&!museumStore.signedIn;
+  $('publish').disabled=!valid||loginNeeded||publishingArt;
+  $('publishHint').textContent=loginNeeded
+    ? 'Google sign-in required before saving this artwork to the cloud.'
+    :valid
+      ? 'Ready to save — your artwork is submitted for review before appearing publicly.'
+      : 'Required: give your artwork a title and description before placing it.';
 }
 $('artTitle').addEventListener('input',updatePublishState);
 $('artDesc').addEventListener('input',updatePublishState);
 function openEditor(){
   if(room==='depot'||!editingSpotId)return;
+  if(museumStore.enabled&&!museumStore.signedIn){
+    show('account');
+    toast('Sign in with Google before creating a cloud artwork.');
+    return;
+  }
   const selection=findVacantSlot(editingSpotId,slots,artworks);
   if(!selection.ok){toast(selection.reason);editingSpotId=null;activeSpot=null;return}
   activeSpot=selection.slot;
@@ -1719,6 +1734,9 @@ function openEditor(){
 }
 $('publish').onclick=async()=>{
   if(publishingArt||room==='depot'||!editingSpotId)return;
+  if(museumStore.enabled&&!museumStore.signedIn){
+    show('account');toast('Google sign-in is required to save.');return;
+  }
   const chosen=findVacantSlot(editingSpotId,slots,artworks);
   if(!chosen.ok){toast(chosen.reason);return}
   const exhibitSlot=chosen.slot;
@@ -1774,35 +1792,36 @@ $('publish').onclick=async()=>{
   }
   publishingArt=true;
   $('publish').disabled=true;
-  artworks.push(a);
-  try{
-    localStorage.setItem(storageKey,JSON.stringify(artworks));
-  }catch(e){
-    artworks.pop();
-    publishingArt=false;
-    updatePublishState();
-    toast('Storage full. Try a simpler sculpture or smaller painting.');
-    return;
-  }
-  let syncMessage='Artwork saved in this browser. It will move to the local Depot after 14 days.';
+  let syncMessage='';
   if(museumStore.enabled){
+    // Server-first publishing: never claim success or close the editor until
+    // the authenticated insert returns. No silent browser-local fallback.
     try{
-      $('publish').disabled=true;
-      const result=await museumStore.submit(a);
-      if(result.pending){
-        a.status='pending';
-        localStorage.setItem(storageKey,JSON.stringify(artworks));
-        syncMessage='Artwork submitted for review. Visible here now, and public once approved.';
-      }
+      const saved=await museumStore.submit(a);
+      a.status=saved.status;
+      a.ownerId=saved.ownerId;
+      a.createdAt=saved.createdAt;
+      artworks.push(a);
+      syncMessage='Saved to your Google account. Awaiting review before public display.';
     }catch(e){
-      console.error(e);
-      syncMessage='Artwork saved locally, but the public upload failed.';
-    }finally{$('publish').disabled=false}
+      console.error('Artwork cloud upload failed',e);
+      publishingArt=false;updatePublishState();
+      toast('Could not save to cloud: '+e.message);
+      return;
+    }
+  }else{
+    artworks.push(a);
+    try{localStorage.setItem(storageKey,JSON.stringify(artworks))}
+    catch(e){
+      artworks.pop();publishingArt=false;updatePublishState();
+      toast('Browser storage full. Try a smaller artwork.');return;
+    }
+    syncMessage='Saved ONLY in this browser. Connect the cloud to share it.';
   }
   // After rebuilding, stand in front of the exact spot just filled.
   hide('editor');
   objects=[];createRoom();
-  splitFlap?.showNewest(a);
+  if(!museumStore.enabled)splitFlap?.showNewest(a);
   const pose=viewFromSlot(exhibitSlot);
   camera.position.set(pose.x,pose.y,pose.z);
   yaw=pose.yaw;pitch=pose.pitch;
@@ -1818,5 +1837,11 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   renderer.render(scene,camera);
   if(shaderFailed)throw new Error('Gallery shader failed to compile on this device.');
   document.getElementById('bootStatus').style.display='none';
-  requestAnimationFrame(tick);if(museumStore.enabled)syncPublicGallery();}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
+  requestAnimationFrame(tick);if(museumStore.enabled){
+    museumStore.init().catch(e=>{
+      console.error('MAD cloud login failed',e);
+      museumStore.ready=true;museumStore.emit();
+      toast('Cloud login unavailable: '+e.message);
+    });
+  }}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
 </script></body></html>

@@ -108,7 +108,7 @@ function addStamp(root,stroke){
 }
 
 export class MixedMediaStudio {
-  constructor(scene,camera,canvas,{wall=false,vitrine=false,onChange=()=>{}}={}){
+  constructor(scene,camera,canvas,{wall=false,vitrine=false,draft=null,onChange=()=>{}}={}){
     this.scene=scene;this.camera=camera;this.canvas=canvas;
     this.wall=wall;this.vitrine=vitrine;this.onChange=onChange;
     this.group=new THREE.Group();scene.add(this.group);
@@ -118,7 +118,8 @@ export class MixedMediaStudio {
     this.ray=new THREE.Raycaster();this.pointer=null;
     this.selectionOutline=null;
     this._bind();
-    this.add('wood');this.add('ceramic');
+    if(draft?.parts?.length)this.restoreDraft(draft);
+    else {this.add('wood');this.add('ceramic');}
   }
   _bind(){
     const start=e=>{if(!this.group.visible)return;
@@ -455,6 +456,48 @@ export class MixedMediaStudio {
     return {v:1,p:b64(Float32Array.from(P)),n:b64(Int8Array.from(N)),
       c:b64(Uint8Array.from(C)),i:b64(Uint16Array.from(I)),
       groups,materials:materialNames,vertices:P.length/3,faces:I.length/3};
+  }
+  saveDraft(){
+    return {selected:this.selected,tool:this.tool,
+      parts:this.parts.map(p=>({
+        kind:p.kind,color:p.color,cut:p.cut,
+        pos:[...p.pos],rot:[...p.rot],scale:[...p.scale],
+        gluedTo:p.gluedTo,strokes:p.strokes.map(v=>[...v]),
+        baked:p.baked,
+        vertices:p.kind==='fabric'?Array.from(p.mesh.geometry.attributes.position.array):null
+      }))
+    };
+  }
+  restoreDraft(data){
+    for(const old of [...this.parts])this.group.remove(old.root);
+    this.parts=[];this.simulations.clear();this.selected=null;this.sequence=0;
+    for(const source of data.parts.slice(0,MAX_PARTS)){
+      if(!this.add(source.kind))break;
+      const p=this.current();
+      p.color=source.color||p.color;
+      p.cut=source.cut||'straight';
+      p.pos=[...source.pos];p.rot=[...source.rot];p.scale=[...source.scale];
+      p.gluedTo=source.gluedTo??null;
+      p.baked=!!source.baked;
+      if(p.cut!=='straight')this.setCut(p.cut);
+      if(p.mesh.material.color)p.mesh.material.color.set(p.color);
+      if(p.kind==='fabric'&&source.vertices?.length===
+          p.mesh.geometry.attributes.position.count*3){
+        p.mesh.geometry.attributes.position.array.set(source.vertices);
+        p.mesh.geometry.attributes.position.needsUpdate=true;
+        p.mesh.geometry.computeVertexNormals();
+        if(p.sim){
+          p.sim.current.set(source.vertices);
+          p.sim.previous.set(source.vertices);
+        }
+      }
+      for(const stroke of (source.strokes||[]).slice(0,MAX_STAMPS)){
+        p.strokes.push(stroke);addStamp(p.root,stroke);
+      }
+      this._transform(p);
+    }
+    if(data.parts.length)this.select(clamp(data.selected??0,0,this.parts.length-1));
+    this.tool=data.tool||'move';
   }
   dispose(){
     for(const [event,fn] of this._events)

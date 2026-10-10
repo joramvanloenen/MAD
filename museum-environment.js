@@ -51,7 +51,7 @@ function titlePanel(text,w=3.6){
 }
 export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
   const colliders=[], lights=[];
-  const isDepot=room==='depot';
+  const isDepot=room==='depot',isCellar=room==='cellar';
   const wall=std(isDepot?0xc8c9c3:0xf1f0ea,.97);
   const trim=std(isDepot?0x8c918e:0xdfdcd4,.74);
   const black=std(0x484e4b,.48,.32);
@@ -59,7 +59,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
   const timber=std(0xa97851,.73);
   const white=std(0xe6e4de,.85);
   const brushed=std(0x929895,.3,.66);
-  const floorMat=isDepot
+  const floorMat=isCellar?new THREE.MeshStandardMaterial({color:0x26292a,roughness:.91,metalness:.01}):isDepot
     // Real archive depots use smooth, light resin/concrete floors; the
     // galvanized sliding floor rails remain visible on top.
     ? new THREE.MeshStandardMaterial({color:0xd9dcd8,roughness:.48,metalness:.02})
@@ -84,7 +84,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
     scene.add(mk(.09,.045,23.2,black,x,7.69,0));
   }
 
-  if(!isDepot){
+  if(room==='gallery'){
     // Two internal dividing partitions. Their broad central openings make
     // three contiguous galleries with sightlines through the complete museum.
     for(const x of [-6.5,7.5]){
@@ -103,7 +103,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
       const label=titlePanel(name,2.5);
       label.position.set(x,6.1,-11.64);scene.add(label);
     }
-  }else{
+  }else if(isDepot){
     // The archive has long flush LED luminaires instead of dramatic
     // spotlight-only lighting, matching real conservation storage rooms.
     const led=new THREE.MeshBasicMaterial({color:0xf4f7f1,toneMapped:false});
@@ -117,6 +117,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
     depotPanel.position.set(0,6,-11.66);scene.add(depotPanel);
   }
 
+  if(!isCellar){
   // Black ceiling tracks with individual tilted white spotlight cylinders.
   const fixtureGeo=new THREE.CylinderGeometry(.095,.13,.30,12);
   const shadeMaterial=std(0xe5e8e2,.38,.14);
@@ -159,7 +160,8 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
     light.position.set(x,7.4,0);scene.add(light);lights.push(light);
     scene.add(mk(1.45,.04,.55,white,x,7.76,0));
   }
-  if(!isDepot){
+  }
+  if(room==='gallery'){
     // Low-profile contemplation benches with sculpted metal legs.
     for(const x of [-13.4,13.4]){
       scene.add(mk(2.6,.14,.66,upholstery,x,.59,.1));

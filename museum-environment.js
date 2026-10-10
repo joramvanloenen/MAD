@@ -5,7 +5,8 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.m
 const std=(c,rough=.8,metal=0)=>new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:metal});
 const mk=(w,h,d,material,x,y,z)=>{
   const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-  o.position.set(x,y,z);o.receiveShadow=true;o.castShadow=true;return o;
+  o.position.set(x,y,z);o.receiveShadow=true;o.castShadow=true;
+  o.userData.madStatic=true;return o;
 };
 function woodTexture(depot=false){
   const c=document.createElement('canvas');c.width=1024;c.height=1024;
@@ -66,6 +67,7 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
     : new THREE.MeshStandardMaterial({map:woodTexture(false),roughness:.66,metalness:0});
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(38.85,23.7),floorMat);
   floor.rotation.x=-Math.PI/2;floor.position.y=.004;floor.receiveShadow=true;
+  floor.userData.madStatic=true;
   scene.add(floor);
 
   // Flush wall skirting and ceiling shadow-gap details.

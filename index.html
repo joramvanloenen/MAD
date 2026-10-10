@@ -44,9 +44,10 @@ import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from '.
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
 const museumAudio=new MuseumAudio();
 // Reduced-resource mode is automatic on phones/tablets; ?safe=1 also forces it.
+const FORCED_LOW_POWER=new URLSearchParams(location.search).has('safe');
 const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-  new URLSearchParams(location.search).has('safe');
+  FORCED_LOW_POWER;
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
 let scene,camera,renderer,gi=null,environment=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
@@ -208,7 +209,9 @@ function createRoom(){
   });
   scene=new THREE.Scene();scene.background=new THREE.Color(room==='gallery'?'#b9bdb9':'#737978');scene.fog=new THREE.Fog(scene.background,23,63);camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.07,120);camera.rotation.order='YXZ';if(!renderer){
   renderer=new THREE.WebGLRenderer({
-    antialias:!MOBILE_SAFE,
+    // Request native MSAA on mobile too; previous mobile mode switched it off.
+    // ?safe=1 still disables it as a recovery path for weak GPUs.
+    antialias:!FORCED_LOW_POWER,
     powerPreference:MOBILE_SAFE?'default':'high-performance',
     stencil:false
   });
@@ -225,7 +228,9 @@ function createRoom(){
   });
   renderer.domElement.addEventListener('webglcontextrestored',()=>location.reload());
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio,MOBILE_SAFE?.9:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
+// Slightly higher mobile render resolution to reduce remaining pixel stair-steps.
+renderer.setPixelRatio(Math.min(devicePixelRatio,
+  FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='gallery'?0xe2e1dc:0xa5a9a5,0,-.17,0);scene.add(floor);const mat=room==='gallery'?0xf2f1ea:0x9da29e;
 // The east wall is physically divided around the archive door.
 for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],
   [.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]]){

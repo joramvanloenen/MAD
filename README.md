@@ -33,6 +33,7 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI q
 - `clay-sculpt.js`: 25³ signed-distance sculpting, vertex pigment, mesh extraction and LOD.
 - `wall-art.js`: nonpenetrating wall relief rules.
 - `museum-inspection.js`: orbitable close-up exhibit viewer.
+- `split-flap.js`: animated black 16-column × 3-row mechanical arrival board beside the Depot door, with white flap lettering, green indicator tiles, alternating recent artist/title notices and cryptic messages. Interact using E near the board or use the DISPLAY menu button. Edit messages as multiline blocks separated by a blank line; Save persists only in the current browser's localStorage, not globally across visitors.
 - `museum-audio.js`: five locally hosted, recorded footsteps on wood, matched to distance walked (roughly 0.6 seconds between contacts at normal walking speed), gentle per-step pitch variation and short room reflections.
 - `museum-placement.js`: immutable gallery spot IDs, occupancy verification, and camera return to the exact newly filled spot.
 - `museum-store.js` and `mad-config.js`: optional shared Supabase data store.

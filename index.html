@@ -32,6 +32,7 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { MuseumGI } from './gi.js';
 import { buildMuseumEnvironment } from './museum-environment.js';
+import { buildDepotArchive } from './museum-depot.js';
 import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js';
 import { makeArtworkInspector } from './museum-inspection.js';
@@ -50,7 +51,7 @@ const MOBILE_SAFE=matchMedia('(pointer:coarse)').matches ||
   FORCED_LOW_POWER;
 let framesRendered=0,renderRecovery=false,shaderFailed=false;
 const museumStore=new MuseumStore();
-let scene,camera,renderer,gi=null,environment=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
+let scene,camera,renderer,gi=null,environment=null,depotArchive=null,splitFlap=null,inspector=null,depotDoorLeaf=null,doorTransitioning=false,artGroup,room='gallery', interactTarget=null,activeSpot=null,editingSpotId=null,publishingArt=false,mode='painting',sculptScene,sculptCam,sculptRenderer,sculptMesh,voxelScene,voxelCam,voxelRenderer,voxels=new Map(),voxelRoot,voxelRemove=false,painting=false,origin=null,paintTool='brush',color='#c5eb68',pointerLocked=false,lastTime=performance.now(),yaw=0,pitch=0,toastTimer;
 const storageKey='mad-artworks-v1', artworks=JSON.parse(localStorage.getItem(storageKey)||'[]');
 $('cloudStatus').textContent=museumStore.enabled?'CLOUD · REVIEWED':'LOCAL ONLY';
 $('syncBtn').classList.toggle('hidden',!museumStore.enabled);
@@ -200,6 +201,7 @@ function createModernDepotDoor(){
 function createRoom(){
   if(gi){gi.dispose();gi=null}
   if(environment){environment.dispose();environment=null}
+  if(depotArchive){depotArchive.dispose();depotArchive=null}
   if(splitFlap){splitFlap.dispose();splitFlap=null}
   if(scene)scene.traverse(o=>{
     if(!o.isMesh)return;
@@ -251,7 +253,18 @@ try{
   splitFlap=null;
 }
 artGroup=new THREE.Group();scene.add(artGroup);
-if(room==='gallery'){for(let s of slots)makeSpot(s)}else{artworks.filter(a=>expired(a)).forEach((a,i)=>makeDepotArt(a,i));}
+if(room==='gallery'){
+  for(const s of slots)makeSpot(s);
+}else{
+  const archived=artworks.filter(a=>expired(a));
+  depotArchive=buildDepotArchive(scene,archived,artMesh,slots);
+  objects.push(...depotArchive.interactables);
+  environment.colliders.push(...depotArchive.colliders);
+  // Sculptures and other free-standing pieces remain in the Depot as
+  // compact objects; paintings and wall reliefs hang on the sliding grids.
+  archived.filter(a=>!depotArchive.mountedIds.has(a.id))
+    .forEach((a,i)=>makeDepotArt(a,i));
+}
 camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
   try{
     // The six sampler3D GI uniforms plus large gallery light arrays can
@@ -469,7 +482,7 @@ function installArtwork(g,s,a){
   mountPlaque(g,s,a);
 }
 function makeDepotArt(a,i){
-  const x=-14+(i%6)*5.5,z=-6+Math.floor(i/6)*5;
+  const x=-16+(i%9)*3.9,z=(Math.floor(i/9)%3-1)*1.9;
   const original=slots.find(s=>s.id===a.spotId);
   const type=original?.type??'plinth';
   const s={id:'depot'+i,type,x,z,rot:0};
@@ -484,7 +497,20 @@ function makeDepotArt(a,i){
   objects.push({mesh:collision,kind:'art',art:a});
 }
 const ray=new THREE.Raycaster();function nearest(){const v=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation),o=camera.position.clone();ray.set(o,v);let hits=ray.intersectObjects(objects.map(o=>o.mesh),false);for(let h of hits){if(h.distance>6)break;let o=objects.find(t=>t.mesh===h.object);if(o)return o}return null}
-function updateTarget(){interactTarget=nearest();const prompt=$('prompt');if(interactTarget){prompt.style.display='block';prompt.textContent=interactTarget.kind==='portal'?(room==='gallery'?'E · VISIT THE DEPOT':'E · RETURN TO GALLERY'):interactTarget.kind==='spot'?'E · CREATE AN ARTWORK':interactTarget.kind==='flap'?'E · EDIT SPLIT-FLAP':'E · VIEW ARTWORK';}else prompt.style.display='none'}
+function updateTarget(){
+  interactTarget=nearest();
+  const prompt=$('prompt');
+  if(!interactTarget){prompt.style.display='none';return}
+  prompt.style.display='block';
+  if(interactTarget.kind==='portal')
+    prompt.textContent=room==='gallery'?'E · VISIT THE DEPOT':'E · RETURN TO GALLERY';
+  else if(interactTarget.kind==='rack')
+    prompt.textContent='E · '+(interactTarget.rack.target>.5?'CLOSE':'SLIDE')+
+      ' ARCHIVE RACK  '+interactTarget.rack.id;
+  else if(interactTarget.kind==='spot')prompt.textContent='E · CREATE AN ARTWORK';
+  else if(interactTarget.kind==='flap')prompt.textContent='E · EDIT SPLIT-FLAP';
+  else prompt.textContent='E · VIEW ARTWORK';
+}
 function interact(){
   if(!interactTarget)return;
   const o=interactTarget;
@@ -511,6 +537,11 @@ function interact(){
     return;
   }
   if(o.kind==='flap'){openFlapEditor();return;}
+  if(o.kind==='rack'){
+    const opening=o.rack.toggle();
+    toast('ARCHIVE '+o.rack.id+' · '+(opening?'Sliding out':'Sliding back'));
+    updateTarget();return;
+  }
   if(o.kind==='spot'){
     const availability=findVacantSlot(o.spot?.id,slots,artworks);
     if(!availability.ok){toast(availability.reason);return}
@@ -534,7 +565,7 @@ function interact(){
   }
 }
 function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close();if(id==='editor'&&!publishingArt){editingSpotId=null;activeSpot=null}}
-function tick(now){requestAnimationFrame(tick);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
+function tick(now){requestAnimationFrame(tick);depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;camera.position.x=clamp(camera.position.x,-18.3,18.3);
 camera.position.z=clamp(camera.position.z,-11.15,11.15);
 if(environment?.colliders?.length){
   const p=camera.position,radius=.38;
@@ -701,9 +732,19 @@ function visitArtwork(a){
   objects=[];createRoom();
   let x=0,z=0,front=0;
   if(archive){
-    const index=artworks.filter(expired).findIndex(v=>v.id===a.id);
-    x=-14+(index%6)*5.5;
-    z=-6+Math.floor(index/6)*5;
+    const rackPose=depotArchive?.locate(a.id);
+    if(rackPose){
+      camera.position.set(rackPose.x,rackPose.y,rackPose.z);
+      yaw=rackPose.yaw;pitch=rackPose.pitch;
+      camera.rotation.set(pitch,yaw,0);
+      toast('Archive rack opened · '+a.title);
+      return;
+    }
+    const loose=artworks.filter(expired)
+      .filter(v=>!depotArchive?.mountedIds?.has(v.id));
+    const index=Math.max(0,loose.findIndex(v=>v.id===a.id));
+    x=-16+(index%9)*3.9;
+    z=(Math.floor(index/9)%3-1)*1.9;
   }else{
     const spot=slots.find(s=>s.id===a.spotId);
     if(!spot){toast('Artwork location unavailable');return}

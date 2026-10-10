@@ -362,7 +362,9 @@ if(room==='gallery'){
   environment.colliders.push(...upper.barriers);
   objects.push(upper.portal);
 }else if(room==='cellar'){
-  objects.push(buildCellar(scene,{eco:MOBILE_SAFE}));
+  const cellarExit=buildCellar(scene,{eco:MOBILE_SAFE});
+  objects.push(cellarExit);
+  environment.colliders.push(...cellarExit.colliders);
 }
 if(room==='gallery'||room==='depot'){
   try{

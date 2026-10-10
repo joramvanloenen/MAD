@@ -138,7 +138,7 @@ function attachPicture(rack,art,artMesh,slotType,mountIndex){
     hit,
     locate(){
       rack.openRack();
-      const z=rack.group.position.z+alongZ;
+      const z=rack.baseZ+rack.dir*1.65+alongZ;
       return {
         x:clamp(rack.x+side*1.36,-17.9,17.9),
         y:1.7,z:clamp(z,-10.8,10.8),

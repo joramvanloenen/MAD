@@ -83,12 +83,17 @@ const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-
 { id:'e6',type:'wall',zone:'wing',x:-3,z:11.68,rot:Math.PI },
 { id:'e7',type:'wall',zone:'wing',x:5,z:11.68,rot:Math.PI },
 { id:'e8',type:'wall',zone:'wing',x:12,z:11.68,rot:Math.PI },
+{ id:'e9',type:'plinth',zone:'wing',x:-12,z:0,rot:0 },
+{ id:'e10',type:'plinth',zone:'wing',x:0,z:0,rot:0 },
+{ id:'e11',type:'floor',zone:'wing',x:12,z:-3,rot:0 },
 { id:'u1',type:'wall',zone:'upper',x:-11,z:-11.68,rot:0 },
 { id:'u2',type:'wall',zone:'upper',x:-3,z:-11.68,rot:0 },
 { id:'u3',type:'wall',zone:'upper',x:5,z:-11.68,rot:0 },
 { id:'u4',type:'wall',zone:'upper',x:12,z:-11.68,rot:0 },
 { id:'u5',type:'wall',zone:'upper',x:-10,z:11.68,rot:Math.PI },
 { id:'u6',type:'wall',zone:'upper',x:-1,z:11.68,rot:Math.PI },
+{ id:'u7',type:'plinth',zone:'upper',x:-7,z:0,rot:0 },
+{ id:'u8',type:'plinth',zone:'upper',x:10,z:0,rot:0 },
 { id:'c1',type:'wall',zone:'cellar',x:-13,z:-11.68,rot:0 },
 { id:'c2',type:'wall',zone:'cellar',x:-5,z:-11.68,rot:0 },
 { id:'c3',type:'wall',zone:'cellar',x:4,z:-11.68,rot:0 },
@@ -406,7 +411,10 @@ function mountAvailableMarker(g,s){
   g.add(sign);
 }
 function makeSpot(s){
-  const g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=s.rot;artGroup.add(g);
+  const g=new THREE.Group();g.position.set(s.x,0,s.z);g.rotation.y=s.rot;
+  // The underground exhibition has a much lower conservation ceiling.
+  if(room==='cellar'&&s.type==='wall')g.scale.setScalar(.68);
+  artGroup.add(g);
   const a=spotArt(s.id);let base;
   if(s.type==='wall'){
     // Subtle exhibition reserve panel: warmer than the plaster, never a

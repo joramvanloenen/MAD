@@ -149,7 +149,7 @@ export class MixedMediaStudio {
     const start=e=>{if(!this.group.visible)return;
       if(e.button>1)return;
       e.preventDefault();e.stopImmediatePropagation();
-      const hit=this._hit(e);
+      const hit=this.tool==='orbit'?null:this._hit(e);
       if(hit){
         this.select(hit.part.id);
         if(this.tool==='paint'){this._stamp(hit);this.pointer={x:e.clientX,y:e.clientY,type:'paint'};}
@@ -210,6 +210,9 @@ export class MixedMediaStudio {
   }
   _stamp({part,hit}){
     if(part.strokes.length>=MAX_STAMPS)return;
+    const now=performance.now();
+    if(this.lastStamp&&now-this.lastStamp<38)return;
+    this.lastStamp=now;
     const point=part.root.worldToLocal(hit.point.clone());
     const normal=hit.face?.normal?.clone()||new THREE.Vector3(0,0,1);
     normal.transformDirection(hit.object.matrixWorld);

@@ -90,10 +90,12 @@ export class MuseumGI {
       for(const s of slots) {
         const a=artworks.find(t=>t.spotId===s.id && Date.now()-t.createdAt < 14*86400000);
         if(s.type==='plinth')this.addBox(s.x,.45,s.z,1.17,.46,1.17,'#e3e0d9');
+        if(s.type==='vitrine')this.addBox(s.x,.36,s.z,.64,.36,.64,'#e1e1db');
         if(s.type==='floor')this.addBox(s.x,.035,s.z,1.6,.055,1.6,'#d7d4cf');
         if(!a)continue;
         if(s.type==='wall')this.addWallArtProxy(s.x,3,s.z,Math.cos(s.rot),a);
-        else this.addSphere(s.x,s.type==='plinth'?2.12:1.5,s.z,1.02,a.color);
+        else this.addSphere(s.x,s.type==='vitrine'?1.22:s.type==='plinth'?2.12:1.5,
+          s.z,s.type==='vitrine'?.45:1.02,a.color);
       }
     } else {
       artworks.filter(a=>Date.now()-a.createdAt>=14*86400000).forEach((a,i)=>{
@@ -103,8 +105,10 @@ export class MuseumGI {
           this.addBox(x,3,z-.12,1.78,2.13,.11,'#aaaead');
           this.addWallArtProxy(x,3,z,1,a);
         }else{
-          if(original?.type!=='floor')this.addBox(x,.45,z,1.17,.46,1.17,'#b9bcb4');
-          this.addSphere(x,original?.type==='floor'?1.5:2.12,z,1.06,a.color);
+          if(original?.type==='vitrine')this.addBox(x,.36,z,.64,.36,.64,'#b9bcb4');
+          else if(original?.type!=='floor')this.addBox(x,.45,z,1.17,.46,1.17,'#b9bcb4');
+          this.addSphere(x,original?.type==='floor'?1.5:original?.type==='vitrine'?1.22:2.12,
+            z,original?.type==='vitrine'?.45:1.06,a.color);
         }
       });
     }

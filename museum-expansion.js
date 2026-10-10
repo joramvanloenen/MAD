@@ -147,7 +147,12 @@ export function buildCellar(scene,{eco=false}={}){
 
   // One clean low ceiling. Nothing hangs at exhibition-picture height.
   // Its lower face is Y=3.68; C-series wall artworks end around Y=3.22.
-  brick(scene,38.6,.30,23.5,vault,0,3.83,0);
+  // Cut a genuine overhead void over the staircase. Its highest steps
+  // rise 2.42 m and need headroom; an unbroken low vault would intersect
+  // both the steps and visitors approaching the original west entrance.
+  brick(scene,34.0,.30,23.5,vault,2.40,3.83,0);
+  brick(scene,4.8,.30,14.72,vault,-17.0,3.83,-4.39);
+  brick(scene,4.8,.30,5.90,vault,-17.0,3.83,8.80);
 
   // Three transverse structural ribs give a sequence of exhibition bays.
   // Integrated in the ceiling: they never divide the floor or obscure art.

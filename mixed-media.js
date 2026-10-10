@@ -326,6 +326,33 @@ export class MixedMediaStudio {
     if(this.parts.length)this.select(this.parts[this.parts.length-1].id);
     else this.onChange(this);
   }
+  setPartColor(value){
+    const p=this.current();if(!p)return;
+    p.color=value;
+    p.mesh.material.color.set(value);
+    this.onChange(this);
+  }
+  duplicate(){
+    const original=this.current();if(!original||this.parts.length>=MAX_PARTS)return false;
+    const snapshot={
+      kind:original.kind,color:original.color,cut:original.cut,
+      pos:[original.pos[0]+.22,original.pos[1]+.17,original.pos[2]+.14],
+      rot:[...original.rot],scale:[...original.scale],
+      strokes:original.strokes.map(v=>[...v]),baked:original.baked
+    };
+    if(!this.add(original.kind))return false;
+    const p=this.current();
+    p.color=snapshot.color;p.cut=snapshot.cut;
+    p.pos=snapshot.pos;p.rot=snapshot.rot;p.scale=snapshot.scale;
+    if(p.cut!=='straight')this.setCut(p.cut);
+    p.mesh.material.color.set(p.color);
+    for(const stroke of snapshot.strokes){
+      p.strokes.push(stroke);addStamp(p.root,stroke);
+    }
+    this._transform(p);
+    this.onChange(this);
+    return true;
+  }
   setPaintColor(value){this.paintColor=value}
   setBrushSize(value){this.brush=clamp(Number(value),.025,.42)}
   setTool(value){this.tool=value}

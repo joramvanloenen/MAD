@@ -105,9 +105,16 @@ create or replace function public.mad_guard_approval()
 returns trigger language plpgsql security definer
 set search_path = ''
 as $$
+declare
+  needs_guard boolean := false;
 begin
-  if NEW.status = 'approved' and
-     (TG_OP='INSERT' or OLD.status is distinct from NEW.status) then
+  if TG_OP = 'INSERT' then
+    needs_guard := NEW.status = 'approved';
+  else
+    needs_guard := NEW.status = 'approved' and
+      OLD.status is distinct from NEW.status;
+  end if;
+  if needs_guard then
     perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(NEW.spot_id));
     if exists (
       select 1 from public.mad_artworks a

@@ -64,4 +64,5 @@ create policy mad_submit_pending on public.mad_artworks
 -- vitrines (v1...v6) can receive publicly moderated artwork submissions.
 alter table public.mad_artworks drop constraint if exists mad_spot_format;
 alter table public.mad_artworks add constraint mad_spot_format
-  check (spot_id ~ '^(w|p|f|v)[0-9]{1,3}$');
+  check (spot_id ~ '^(w|p|f|v|e|u|c)[0-9]{1,3});
+);

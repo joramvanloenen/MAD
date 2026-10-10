@@ -108,8 +108,8 @@ import { MuseumAudio } from './museum-audio.js';
 import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js?v=20261010-auth2';
 import {findVacantSlot, viewFromSlot} from './museum-placement.js?v=20261010-cellar5';
 import { ClayField } from './clay-sculpt.js';
-import { MuseumStore } from './museum-store.js?v=auth2';
-import { installAccountUI } from './museum-account-ui.js?v=auth2';
+import { MuseumStore } from './museum-store.js?v=public4';
+import { installAccountUI } from './museum-account-ui.js?v=public4';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js?v=20261010-voxel3';
 const $=id=>document.getElementById(id), clamp=THREE.MathUtils.clamp;
 installArtworkEditorLayout();
@@ -145,6 +145,17 @@ async function syncPublicGallery(){
   }finally{if(version===gallerySyncVersion)$('syncBtn').disabled=false}
 }
 $('syncBtn').onclick=syncPublicGallery;
+ // Refresh shared gallery when visitors return to this tab, plus an
+ // infrequent idle poll. Never tear down the WebGL editor while it is open.
+ addEventListener('focus',()=>{
+   if(museumStore.ready&&!document.querySelector('.overlay.open'))
+     syncPublicGallery().catch(e=>console.warn('Gallery focus refresh',e));
+ });
+ setInterval(()=>{
+   if(museumStore.ready&&document.visibilityState==='visible'&&
+     !document.querySelector('.overlay.open'))
+     syncPublicGallery().catch(e=>console.warn('Gallery refresh',e));
+ },60000);
 installAccountUI({store:museumStore,show,hide,toast,
   sync:syncPublicGallery,storageKey});
 const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0},...VITRINE_SPOTS,

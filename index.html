@@ -67,7 +67,6 @@ const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6
 let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
 function box(w,h,d,col,x=0,y=0,z=0,material){let mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material||new THREE.MeshStandardMaterial({color:col,roughness:.83}));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;return mesh}
-function labelSprite(text,w=2){let c=document.createElement('canvas');c.width=512;c.height=192;let ctx=c.getContext('2d');ctx.fillStyle='#f2f0e8';ctx.fillRect(0,0,512,192);ctx.fillStyle='#1b2221';ctx.font='bold 34px Arial';ctx.fillText(text.slice(0,23),25,65);ctx.fillStyle='#66706b';ctx.font='22px Arial';ctx.fillText('MAD  /  OPEN COLLECTION',25,111);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,w*192/512),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));return m}
 function showRenderError(message){
   const el=document.getElementById('bootStatus');
   if(!el){

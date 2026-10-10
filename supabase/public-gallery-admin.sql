@@ -173,6 +173,6 @@ create policy mad_insert on public.mad_artworks for insert to anon,authenticated
 alter table public.mad_artworks enable row level security;
 
 -- Obsolete Google-admin RPC must not remain accessible.
-revoke all on function public.mad_is_admin() from public,anon,authenticated;
+drop function if exists public.mad_is_admin();
 -- The existing trigger prevents double-booking a spot via anonymous insert.
 revoke all on function public.mad_guard_approval() from public,anon,authenticated;

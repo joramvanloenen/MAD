@@ -121,6 +121,38 @@ export function installAccountUI({store,show,hide,toast,sync,storageKey}){
     if(!rows.length)list.textContent='No submissions to review right now.';
   }catch(e){$('adminStatus').textContent='Could not load reviews: '+e.message}
  }
+ $('showApproved').onclick=async()=>{
+   if(!store.isAdmin)return;
+   const list=$('adminList');list.replaceChildren();
+   $('adminStatus').textContent='Loading published artworks…';
+   try{
+     const rows=await store.published();
+     $('adminStatus').textContent=rows.length+' approved artwork(s) (most recent 200).';
+     for(const row of rows){
+       const a=row.payload||{},card=document.createElement('article');
+       card.className='card';
+       const title=document.createElement('strong');
+       title.textContent=escapeTag(a.title||'Untitled',100);
+       const info=document.createElement('p');info.className='stat';
+       info.textContent='BY '+escapeTag(a.artist,60)+' · '+
+         escapeTag(row.spot_id,8).toUpperCase()+
+         ' · '+new Date(row.created_at).toLocaleDateString();
+       const desc=document.createElement('p');
+       desc.textContent=escapeTag(a.desc,500);
+       const btn=document.createElement('button');
+       btn.className='btn secondary';btn.textContent='REMOVE FROM MUSEUM';
+       btn.onclick=async()=>{
+         if(!confirm('Permanently delete this approved artwork from MAD?'))return;
+         btn.disabled=true;
+         try{await store.remove(row.id);await sync();card.remove();
+           toast('Artwork removed from shared museum');}
+         catch(e){btn.disabled=false;toast('Could not delete: '+e.message)}
+       };
+       card.append(title,info,desc,btn);list.append(card);
+     }
+     if(!rows.length)list.textContent='No published artworks yet.';
+   }catch(e){$('adminStatus').textContent='Could not load published works: '+e.message}
+ };
  $('refreshPending').onclick=refreshReviews;
  return {status,refreshReviews};
 }

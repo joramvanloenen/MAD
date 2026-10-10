@@ -9,7 +9,8 @@ const cellarStone=material(0x25282b,.92),iron=material(0x494f52,.49,.54);
 const gold=material(0xa99372,.6,.38);
 function brick(scene,w,h,d,m,x,y,z){
   const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
-  o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o;
+  o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;
+  o.userData.madStatic=true;scene.add(o);return o;
 }
 function trigger(scene,w,h,d,x,y,z){
   const o=brick(scene,w,h,d,new THREE.MeshBasicMaterial({

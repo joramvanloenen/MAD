@@ -1,0 +1,199 @@
+/* MAD ARTWORK WORKSTATION - designed for desktop, tablet and phones.
+   The editor shell never scrolls: only its currently selected pane may scroll
+   on desktop. Mobile exposes every action via pane tabs without page scroll. */
+#editor{padding:clamp(8px,1.6vw,20px);align-items:center;justify-content:center;
+  background:rgba(8,12,13,.91);backdrop-filter:blur(6px)}
+#editor .editorShell{width:min(1640px,100%);max-width:1640px;
+  height:min(96dvh,1080px);max-height:96dvh;padding:0;
+  display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;
+  background:#181d1e;border:1px solid #66716b55;border-radius:17px;
+  overflow:hidden;box-shadow:0 20px 100px #000b}
+#editor .editorHeader{display:flex;align-items:center;justify-content:space-between;
+  gap:14px;padding:15px 23px 10px;min-height:64px}
+#editor .editorHeading{min-width:0}
+#editor .editorOverline{font-size:10px;letter-spacing:.17em;font-weight:750;color:#d6fd68}
+#editor .editorHeading h1{font-size:clamp(21px,2.2vw,30px);margin:3px 0 1px;letter-spacing:-.04em}
+#editor #spotLabel{margin:0;color:#a3ada7;font-size:11px;line-height:1.4;white-space:nowrap;
+  text-overflow:ellipsis;overflow:hidden}
+#editor .editorHeader .close{position:static;flex:0 0 39px;
+  width:39px;height:39px;border:1px solid #ffffff20;
+  background:#31393a;color:#edf2ee;display:grid;place-items:center}
+#editor .editorRule{margin:0 23px 8px;border-radius:7px;
+  padding:6px 10px;background:#272d29;border:1px solid #515f4a44;
+  color:#b8cbb7;font-size:11px;line-height:1.5;max-height:42px;overflow:hidden}
+#editor .editorModeTabs{display:flex;flex-wrap:nowrap;gap:4px;margin:0;
+  padding:0 20px 12px;overflow-x:auto;scrollbar-width:none;
+  border-bottom:1px solid #ffffff14}
+#editor .editorModeTabs::-webkit-scrollbar{display:none}
+#editor .editorModeTabs .tab{padding:10px 13px;border-radius:7px;font-size:11px;
+  letter-spacing:.015em;white-space:nowrap;flex:0 0 auto;
+  border-color:#424b49;color:#d4dcd5}
+#editor .editorModeTabs .tab.active{background:#d6fd68;color:#192417;border-color:#d6fd68}
+#editor .editorGrid{display:grid;grid-template-columns:minmax(0,1fr) clamp(290px,27vw,385px);
+  min-height:0;height:100%;gap:0;overflow:hidden}
+#editor .editorWorkspace{min-width:0;min-height:0;display:flex;flex-direction:column;
+  background:radial-gradient(ellipse at 50% 35%,#293132 0%,#101617 85%);
+  position:relative;overflow:hidden;padding:17px}
+#editor #paintPanel:not(.hidden),#editor #sculptPanel:not(.hidden),
+#editor #voxelPanel:not(.hidden){display:flex;flex:1;flex-direction:column;
+  min-height:0;min-width:0;align-items:stretch;justify-content:center;gap:8px}
+#editor #artCanvas{min-height:0;min-width:0;width:auto;height:100%;
+  max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;
+  image-rendering:auto;margin:auto;box-shadow:0 12px 55px #0007}
+#editor #sculptView{height:auto;min-height:0;min-width:0;flex:1;
+  background:#0c1113;border:1px solid #49545144;border-radius:12px}
+#editor #voxelView{height:auto!important;min-height:0;min-width:0;flex:1;
+  width:100%;border:1px solid #49545144}
+#editor #sculptHelp,#editor #voxelHelp,#editor #paintPanel>.stat{
+  font-size:11px;margin:0;text-align:center;color:#9eaba5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5;
+  flex:0 0 auto}
+#editor .editorInspector{display:grid;grid-template-rows:42px minmax(0,1fr);
+  min-height:0;min-width:0;background:#22292a;border-left:1px solid #3d47453f}
+#editor .editorInspectorTabs{display:grid;grid-template-columns:repeat(3,1fr);
+  padding:5px;gap:4px;background:#1d2425;border-bottom:1px solid #ffffff0f}
+#editor .editorInspectorTab{border:0;border-radius:6px;
+  color:#b1bcb7;background:transparent;font-size:12px;font-weight:700;
+  padding:6px 2px;min-width:0;white-space:nowrap}
+#editor .editorInspectorTab.active{background:#36433f;color:#ebffe8;
+  box-shadow:inset 0 -2px 0 #d6fd68}
+#editor .editorInspectorPane{min-height:0;min-width:0;padding:15px 17px;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+  scrollbar-color:#56625d transparent;scrollbar-width:thin}
+#editor .editorInspectorPane label{font-size:10px;letter-spacing:.075em;
+  margin:12px 0 5px}
+#editor .editorInspectorPane input:not([type=range]),#editor .editorInspectorPane textarea,
+#editor .editorInspectorPane select{min-height:38px;padding:8px 10px}
+#editor .editorInspectorPane input[type=range]{padding:0;height:27px;min-height:27px}
+#editor .editorInspectorPane .toolrow{gap:6px;margin:7px 0}
+#editor .editorInspectorPane .toolrow button{font-size:11px;min-height:37px;
+  padding:8px 10px}
+#editor .editorInspectorPane .stat{font-size:11px;line-height:1.45}
+#editor #editorDetailsPane textarea{height:105px;min-height:70px;resize:none}
+#editor #editorDetailsPane{display:flex;flex-direction:column;justify-content:flex-start}
+#editor .editorStorageNote{font-size:11px;padding:9px;margin:10px 0;background:#292f2b;
+  color:#b5beb7;border:1px solid #424d46}
+#editor .editorToolGroup:not(.hidden){display:block}
+#editor #clayTools:not(.hidden){display:block}
+#editor #mixedPanel h3,#editor #mixedPanel>p.stat:not(#mixedFeedback){display:none}
+#editor #mixedPanel{padding:0}
+#editor .atelierSelection{display:grid;grid-template-columns:auto minmax(0,1fr);
+  gap:8px;align-items:center;margin:0 0 10px}
+#editor .atelierSelection label{margin:0;white-space:nowrap}
+#editor .atelierSelection select{min-width:0}
+#editor .atelierTabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:3px;margin:0 0 8px}
+#editor .atelierTab{border:1px solid #ffffff20;background:#343e3e;
+  color:#d1d7d3;font-size:10px;font-weight:700;min-width:0;
+  padding:9px 1px;border-radius:5px}
+#editor .atelierTab.active{background:#d6fd68;color:#192418;border-color:#d6fd68}
+#editor .atelierSection:not(.hidden){display:block}
+#editor .atelierSection>.toolrow{margin:6px 0}
+#editor .atelierSection label{margin:7px 0 3px}
+#editor #mixedAddRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#editor #mixedAddRow button{padding:8px 4px;font-size:10px;min-height:33px}
+#editor #mixedFeedback{font-size:10px;line-height:1.45;margin:8px 0 0;
+  color:#b7c8bb;overflow:hidden;max-height:30px}
+#editor .editorFooter{display:flex;align-items:center;gap:12px;min-height:68px;
+  border-top:1px solid #ffffff1c;padding:11px 20px;background:#191e1d}
+#editor #publish{order:2;flex:0 0 auto;width:auto!important;
+  min-width:198px;min-height:45px;padding:11px 18px;font-size:12px;
+  box-shadow:0 2px 20px #d6fd681b}
+#editor #publishHint{order:1;flex:1;max-width:none;margin:0;font-size:11px;
+  color:#9caaa1;line-height:1.35;min-width:0}
+#editor .editorQuickDetails{order:0;background:#303938;color:#d3dfd7;
+  border:1px solid #515e57;border-radius:8px;min-height:40px;padding:8px 12px;
+  font-size:11px;white-space:nowrap}
+#editor .editorQuickDetails:focus-visible,
+#editor .editorModeTabs .tab:focus-visible,#editor button:focus-visible{
+  outline:2px solid #d6fd68;outline-offset:2px}
+@media(max-width:800px){
+ #editor{padding:0;align-items:stretch}
+ #editor .editorShell{height:100dvh;max-height:100dvh;border:0;border-radius:0;
+   width:100%;max-width:none;grid-template-rows:auto auto minmax(0,1fr) auto}
+ #editor .editorHeader{min-height:47px;padding:6px 12px 5px;gap:8px}
+ #editor .editorHeading{display:flex;align-items:baseline;flex-wrap:nowrap;column-gap:7px}
+ #editor .editorOverline{font-size:9px}
+ #editor .editorHeading h1{font-size:16px;white-space:nowrap;margin:0}
+ #editor #spotLabel{font-size:9px;flex:1}
+ #editor .editorHeader .close{width:35px;height:35px;flex-basis:35px}
+ #editor .editorRule{display:none}
+ #editor .editorModeTabs{padding:0 7px 5px;gap:3px;border-bottom-color:#ffffff16}
+ #editor .editorModeTabs .tab{font-size:10px;padding:8px 9px;border-radius:5px}
+ #editor .editorGrid{grid-template-columns:1fr;grid-template-rows:minmax(110px,1fr)
+   clamp(188px,32dvh,265px)}
+ #editor .editorWorkspace{padding:6px 8px}
+ #editor #sculptView{border-radius:7px}
+ #editor #voxelView{border-radius:7px}
+ #editor #artCanvas{max-height:100%;box-shadow:none}
+ #editor #sculptHelp,#editor #voxelHelp,#editor #paintPanel>.stat{display:none}
+ #editor .editorInspector{grid-template-rows:34px minmax(0,1fr);
+   border-left:0;border-top:1px solid #ffffff23}
+ #editor .editorInspectorTabs{padding:3px 5px;gap:3px}
+ #editor .editorInspectorTab{padding:5px 0;font-size:11px}
+ #editor .editorInspectorPane{padding:7px 12px;overflow:hidden}
+ #editor .editorInspectorPane label{font-size:10px;letter-spacing:.025em;margin:5px 0 2px}
+ #editor .editorInspectorPane input:not([type=range]),
+ #editor .editorInspectorPane select{padding:4px 7px;min-height:31px;height:31px;font-size:12px}
+ #editor .editorInspectorPane input[type=range]{height:21px;min-height:21px}
+ #editor .editorInspectorPane .toolrow{margin:3px 0;gap:4px}
+ #editor .editorInspectorPane .toolrow button{min-height:32px;padding:6px 8px;font-size:10px}
+ #editor #editorDetailsPane{display:grid;grid-template-columns:1fr 1fr;gap:1px 9px;
+   align-content:start}
+ #editor #editorDetailsPane label[for=artTitle]{grid-column:2;grid-row:1}
+ #editor #editorDetailsPane #artist{grid-column:1;grid-row:2}
+ #editor #editorDetailsPane #artTitle{grid-column:2;grid-row:2}
+ #editor #editorDetailsPane label[for=artDesc]{grid-column:1 / -1;grid-row:3}
+ #editor #editorDetailsPane #artDesc{grid-column:1 / -1;grid-row:4}
+ #editor #editorDetailsPane textarea{height:62px;min-height:55px;padding:6px 8px}
+ #editor #editorDetailsPane>label:first-child{grid-column:1;grid-row:1}
+ #editor #paintingOptions,#editor #sculptureOptions{display:grid;grid-template-columns:1fr 1fr;gap:0 7px}
+ #editor #paintingOptions label[for=paintFormat]{grid-column:1;grid-row:1}
+ #editor #paintingOptions label[for=frameStyle]{grid-column:2;grid-row:1}
+ #editor #paintingOptions #paintFormat{grid-column:1;grid-row:2}
+ #editor #paintingOptions #frameStyle{grid-column:2;grid-row:2}
+ #editor #swatches{margin:3px 0;gap:5px}
+ #editor #swatches .swatch{width:22px;height:22px;border-radius:5px}
+ #editor .editorStorageNote{display:none}
+ #editor #paintTools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:0}
+ #editor #paintTools button{min-height:28px;font-size:10px;padding:4px 2px}
+ #editor .editorToolGroup>.toolrow{gap:3px;justify-content:space-between}
+ #editor .editorToolGroup>.toolrow button{padding:5px 7px;min-height:29px}
+ #editor #mixedPanel .atelierSelection{margin:0 0 5px;gap:5px}
+ #editor .atelierTabs{margin:0 0 5px;gap:3px}
+ #editor .atelierTab{padding:7px 1px;font-size:9px}
+ #editor #mixedAddRow{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+ #editor #mixedAddRow button{min-height:29px;padding:5px 2px;font-size:9px}
+ #editor .atelierSection label{margin:3px 0 1px}
+ #editor .atelierSection>.toolrow{margin:3px 0}
+ #editor #mixedFeedback{font-size:9px;margin:5px 0 0;max-height:14px;white-space:nowrap;
+   text-overflow:ellipsis}
+ #editor .editorFooter{min-height:61px;padding:7px 10px;
+   padding-bottom:max(7px,env(safe-area-inset-bottom));
+   gap:7px}
+ #editor #publish{min-width:123px;min-height:43px;flex-basis:auto;
+   padding:7px 12px;font-size:11px}
+ #editor #publishHint{font-size:10px;max-height:33px;overflow:hidden}
+ #editor .editorQuickDetails{font-size:10px;padding:6px 8px;min-height:37px}
+}
+@media(max-width:390px){
+ #editor .editorOverline{display:none}
+ #editor .editorModeTabs .tab{font-size:9px;padding:7px 7px}
+ #editor .editorFooter{gap:6px}
+ #editor #publish{min-width:120px}
+ #editor .editorQuickDetails{padding:6px}
+ #editor .editorInspectorPane{padding:5px 8px}
+}
+@media(max-width:800px) and (max-height:590px) and (orientation:landscape){
+ #editor .editorGrid{grid-template-columns:minmax(0,1fr) minmax(260px,40vw);
+   grid-template-rows:minmax(0,1fr)}
+ #editor .editorInspector{grid-template-rows:31px minmax(0,1fr);border-top:0;
+   border-left:1px solid #ffffff23}
+ #editor .editorHeader{min-height:39px}
+ #editor .editorModeTabs .tab{padding:6px 9px}
+ #editor .editorFooter{min-height:49px;padding-block:4px}
+ #editor .editorInspectorPane{overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){
+ #editor .editorModeTabs .tab,#editor .editorInspectorTab{transition:none}
+}

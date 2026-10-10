@@ -41,14 +41,14 @@ function meshPanel(){
   return lines;
 }
 function numberPlate(text){
-  const canvas=document.createElement('canvas');canvas.width=384;canvas.height=160;
+  const canvas=document.createElement('canvas');canvas.width=480;canvas.height=172;
   const c=canvas.getContext('2d');
-  c.fillStyle='#edf0ec';c.fillRect(0,0,384,160);
-  c.fillStyle='#334440';c.font='bold 39px Arial';
-  c.textAlign='center';c.fillText(text,192,65);
-  c.fillStyle='#71807a';c.font='23px Arial';c.fillText('SLIDE  /  E',192,112);
+  c.fillStyle='#dee6e1';c.fillRect(0,0,480,172);
+  c.fillStyle='#26342f';c.font='bold 65px Arial';
+  c.textAlign='center';c.fillText(text,240,101);
+  // Single rack identifier, no giant floating instruction billboard.
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(.45,.19),
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(.35,.125),
     new THREE.MeshBasicMaterial({map:texture,toneMapped:false}));
   return sign;
 }
@@ -87,8 +87,12 @@ function addRack(scene,index,bank){
     part(group,.145,.075,.17,RAIL,0,3.98,z);
   }
   const tip=dir*(PANEL_DEPTH/2+.025);
+  // Label is now fixed ABOVE the grip on the rack's front upright. In the
+  // older version white sign planes floated over the wire mesh mid-panel.
+  const plateBack=part(group,.40,.165,.024,DARK,0,3.51,tip);
+  plateBack.castShadow=false;
   const plate=numberPlate(id);
-  plate.position.set(0,1.45,tip);
+  plate.position.set(0,3.51,tip+dir*.019);
   plate.rotation.y=dir<0?Math.PI:0;
   group.add(plate);
   const handle=part(group,.11,.35,.028,RAIL,0,1.13,tip);

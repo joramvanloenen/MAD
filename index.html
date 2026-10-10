@@ -386,6 +386,15 @@ if(room==='gallery'||room==='depot'){
     splitFlap=null;
   }
 }
+  try{
+    // Read the committed static RGB565 lightmap atlas for this room.
+    // No probes, ray samples, noise or per-frame GI texture uploads.
+    gi=new StaticMuseumLighting({room});
+    gi.decorateScene(scene);
+  }catch(error){
+    console.warn('Static museum lightmap unavailable; using scene lights only',error);
+    gi?.dispose();gi=null;
+  }
 artGroup=new THREE.Group();scene.add(artGroup);
 if(room!=='depot'){
   for(const s of slots)if((s.zone||'gallery')===room)makeSpot(s);
@@ -400,15 +409,6 @@ if(room!=='depot'){
     .forEach((a,i)=>makeDepotArt(a,i));
 }
 camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
-  try{
-    // Read the committed static RGB565 lightmap atlas for this room.
-    // No probes, ray samples, noise or per-frame GI texture uploads.
-    gi=new StaticMuseumLighting({room});
-    gi.decorateScene(scene);
-  }catch(error){
-    console.warn('Static museum lightmap unavailable; using scene lights only',error);
-    gi?.dispose();gi=null;
-  }
   refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':
   room==='depot'?'THE DEPOT<br>PERMANENT COLLECTION':
   room==='cellar'?'AFTER HOURS<br>UNDERGROUND COLLECTION':

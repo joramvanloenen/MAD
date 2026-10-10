@@ -20,23 +20,32 @@ export function constrainReliefGeometry(geometry, depth=WALL_RELIEF_DEPTH) {
   return geometry;
 }
 
-export function wallVoxelAllowed(x,y,z) {
-  return Number.isInteger(x)&&Number.isInteger(y)&&Number.isInteger(z)
-    &&Math.abs(x)<=WALL_VOXEL_LIMIT&&Math.abs(y)<=WALL_VOXEL_LIMIT
-    &&z>=0&&z<=WALL_VOXEL_LIMIT;
+// Grid 1 is the legacy 9x9 relief. Grid 2 is the new 21x21 relief.
+export function wallVoxelAllowed(x,y,z,resolution=1){
+  const max=resolution>=2?10:WALL_VOXEL_LIMIT;
+  const depth=resolution>=2?8:WALL_VOXEL_LIMIT;
+  return [x,y,z].every(Number.isInteger)&&Math.abs(x)<=max&&
+    Math.abs(y)<=max&&z>=0&&z<=depth;
 }
-
-// Historic artworks may predate the wall-aware editor. Sanitize on display as
-// well as on creation so existing gallery data cannot embed art into the wall.
-export function sanitizeWallVoxels(voxels) {
+const validHex=c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c);
+// Preserve optional per-voxel hexadecimal colour. Older three-number
+// entries still load correctly, with their original artwork-wide colour.
+export function sanitizeWallVoxels(voxels,resolution=1){
   if(!Array.isArray(voxels))return [];
-  const seen=new Set(),result=[];
-  for(const entry of voxels) {
-    if(!Array.isArray(entry)||entry.length!==3||!entry.every(Number.isFinite))continue;
-    const [x,y,z]=entry.map(Math.round);
-    const corrected=[Math.max(-4,Math.min(4,x)),Math.max(-4,Math.min(4,y)),Math.max(0,Math.min(4,z))];
-    const key=corrected.join(',');
-    if(!seen.has(key)){seen.add(key);result.push(corrected)}
+  const result=[],seen=new Set();
+  const max=resolution>=2?10:WALL_VOXEL_LIMIT;
+  const depth=resolution>=2?8:WALL_VOXEL_LIMIT;
+  for(const entry of voxels){
+    if(!Array.isArray(entry)||entry.length<3||
+      !entry.slice(0,3).every(Number.isFinite))continue;
+    const [x,y,z]=entry.slice(0,3).map(Math.round);
+    const p=[Math.max(-max,Math.min(max,x)),
+      Math.max(-max,Math.min(max,y)),Math.max(0,Math.min(depth,z))];
+    const key=p.join(',');
+    if(seen.has(key))continue;
+    seen.add(key);
+    if(validHex(entry[3]))p.push(entry[3]);
+    result.push(p);
   }
   return result;
 }

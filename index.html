@@ -21,7 +21,7 @@
 <div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">This first release is a playable prototype. Art is currently saved in this browser only; public cross-device publishing requires connecting a shared backend.</div><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
 <div class="overlay" id="editor"><div class="modal"><button class="close" data-close="editor">×</button><h1>Create an artwork</h1><p id="spotLabel">Selected exhibition space</p><p id="editorRule" class="notice">Choose your tools for this exhibition spot.</p><div class="tabrow"><button class="tab active" data-mode="painting">2D PAINTING</button><button class="tab" data-mode="sculpture">3D SCULPTURE</button><button class="tab" data-mode="voxel">VOXEL SCULPT</button><button class="tab" data-mode="clay">SMOOTH CLAY</button></div><div class="editorGrid"><div><div id="paintPanel"><div class="toolrow" id="paintTools"><button data-tool="brush" class="selected">Brush</button><button data-tool="watercolor">Watercolor</button><button data-tool="charcoal">Charcoal</button><button data-tool="spray">Spray</button><button data-tool="smudge">Smudge</button><button data-tool="eraser">Eraser</button><button data-tool="line">Line</button><button data-tool="circle">Circle</button></div><div class="toolrow"><button id="paintUndo" title="Undo last stroke">↶ Undo</button><button id="paintRedo" title="Redo undone stroke">↷ Redo</button><button id="paintPattern">Procedural pattern</button><label style="display:flex;align-items:center;gap:5px;margin:0;color:#dbe2de"><input id="paintMirror" type="checkbox" style="width:18px;height:18px;accent-color:#d6fd68"> Mirror</label></div><canvas id="artCanvas" width="512" height="512"></canvas><p class="stat">Draw directly on the canvas. Exported as a framed gallery painting.</p></div><div id="sculptPanel" class="hidden"><div id="clayTools" class="hidden"><div class="toolrow"><button class="selected" data-clay="add">Build</button><button data-clay="subtract">Carve</button><button data-clay="smooth">Smooth</button><button data-clay="flatten">Flatten</button><button data-clay="paint">Paint</button><button id="clayReset">Reset</button></div><label>Clay brush strength</label><input class="range" id="clayStrength" type="range" min="5" max="50" value="22"><p class="stat">Left drag sculpts · Right drag or Alt+drag orbits · The existing brush-size slider controls radius.</p></div><div id="sculptView"></div><p class="stat" id="sculptHelp">Drag to orbit the sculpture. Procedural shapes can be recolored and customized.</p></div><div id="voxelPanel" class="hidden"><div class="toolrow"><button id="voxelAdd" class="selected">+ Add</button><button id="voxelRemove">− Remove</button><button id="voxelClear">Clear</button></div><p class="stat" id="voxelHelp">Click a face to grow your sculpture; remove individual voxels. Drag to rotate.</p><div id="voxelView" style="height:310px;background:#101415;border-radius:10px;overflow:hidden;touch-action:none"></div></div></div><div><label>Artist name</label><input id="artist" maxlength="60" placeholder="Your name" value="Anonymous Artist"><label for="artTitle">Artwork title <span style="color:#d6fd68">*</span></label><input id="artTitle" maxlength="100" required aria-required="true" placeholder="Give your artwork a name"><label for="artDesc">Artwork description <span style="color:#d6fd68">*</span></label><textarea id="artDesc" maxlength="500" required aria-required="true" placeholder="Describe your artwork and what inspired it..."></textarea><div id="shapePanel" class="hidden"><label>Form</label><select id="shape"><option value="torus">Twisted Torus</option><option value="sphere">Organic Blob</option><option value="knot">Knot</option><option value="column">Abstract Column</option><option value="crystal">Faceted Crystal</option><option value="petals">Petal Structure</option><option value="ribbon">Flowing Ribbon</option></select><label>Complexity</label><input class="range" id="complexity" type="range" min="1" max="9" value="5"><label>Distortion</label><input class="range" id="distortion" type="range" min="0" max="100" value="30"><div id="reliefControls" class="hidden"><label>Wall relief depth (always in front of wall)</label><input class="range" id="reliefDepth" type="range" min="10" max="100" value="65"></div></div><div id="paintingOptions"><label for="paintFormat">Canvas proportions</label><select id="paintFormat"><option value="square">Square</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option><option value="wide">Wide panoramic</option></select><label for="frameStyle">Frame</label><select id="frameStyle"><option value="thin">Thin gallery frame</option><option value="none">Frameless canvas</option><option value="oak">Natural oak</option><option value="gold">Gilded</option><option value="black">Deep black</option></select></div><div id="sculptureOptions" class="hidden"><label for="surfaceMat">Sculpture material</label><select id="surfaceMat"><option value="ceramic">Glazed ceramic</option><option value="clay">Painted clay</option><option value="stone">Carved stone</option><option value="bronze">Patinated bronze</option><option value="metal">Brushed metal</option><option value="glass">Frosted glass</option></select></div><label for="artScale">Artwork size</label><input class="range" id="artScale" type="range" min="65" max="110" value="100"><p class="stat">Scale your work within the exhibition space.</p><label>Material / paint color</label><div id="swatches"></div><label>Brush size / voxel scale</label><input class="range" id="brushSize" type="range" min="2" max="54" value="13"><div class="notice">Exhibitions last 14 days, then automatically move to the Depot. Local prototype data stays on this device.</div><p class="stat" id="publishHint" aria-live="polite">Add a title and description to exhibit your artwork.</p><button class="btn" id="publish" style="width:100%" disabled>PLACE IN MUSEUM →</button></div></div></div></div>
 <div class="overlay" id="info"><div class="modal" style="max-width:760px"><button class="close" data-close="info">×</button><h1 id="infoTitle">Artwork</h1><div id="inspectView" class="hidden" style="height:min(52vh,410px);border-radius:14px;overflow:hidden;background:#d9d8d1;touch-action:none;margin-bottom:16px"></div><p id="infoText"></p><button class="btn secondary" data-close="info">BACK TO MUSEUM</button><p id="inspectHelp" class="hidden" style="margin:12px 0 0">Drag to orbit · Scroll to zoom · Esc to leave</p></div></div>
-<div class="overlay" id="catalog"><div class="modal" style="max-width:780px"><button class="close" data-close="catalog">×</button><h1>MAD Collection</h1><p>Discover works on exhibition and the permanent Depot archive.</p><input id="catalogSearch" placeholder="Search artwork, artist, or description" aria-label="Search the art collection"><div class="tabrow"><button class="tab active" data-filter="all">ALL</button><button class="tab" data-filter="gallery">ON SHOW</button><button class="tab" data-filter="depot">DEPOT</button></div><div id="catalogList" style="display:grid;gap:8px"></div></div></div>
+<div class="overlay" id="catalog"><div class="modal" style="max-width:780px"><button class="close" data-close="catalog">×</button><h1>MAD Collection</h1><p>Discover works on exhibition and the permanent Depot archive.</p><input id="catalogSearch" placeholder="Search artwork, artist, or description" aria-label="Search the art collection"><div class="tabrow"><button class="tab active" data-filter="all">ALL</button><button class="tab" data-filter="gallery">ON SHOW</button><button class="tab" data-filter="depot">DEPOT</button><button class="tab" data-filter="afterhours">AFTER HOURS</button></div><div id="catalogList" style="display:grid;gap:8px"></div></div></div>
 <div class="overlay" id="flapEditor"><div class="modal" style="max-width:700px"><button class="close" data-close="flapEditor" aria-label="Close display editor">×</button><h1>Split-flap display</h1><p>Change the messages on the mechanical board beside the Depot door. The board automatically alternates your messages with titles and artists of the newest works in the gallery.</p><pre id="flapPreview" aria-label="Preview of the first message">WELCOME TO THE MAD</pre><label for="flapMessages">Messages — separate with an empty line</label><textarea id="flapMessages" spellcheck="false" maxlength="4000" rows="10" placeholder="WELCOME TO THE MAD&#10;THE COLLECTION&#10;IS ALIVE&#10;&#10;THE WALLS ARE&#10;LISTENING"></textarea><p class="stat" id="flapCount" role="status">Each message can use up to three rows of 16 characters. Longer lines are shortened to fit.</p><div class="toolrow"><button class="btn" id="flapSave">SAVE MESSAGES</button><button class="btn secondary" id="flapNext">NEXT MESSAGE →</button><button class="btn secondary" id="flapReset">RESTORE DEFAULTS</button></div><p class="stat">Messages are saved in this browser. The public gallery database is not configured for shared display messages.</p></div></div>
 <div id="bootStatus" role="status" style="position:fixed;z-index:30;inset:0;display:grid;place-items:center;background:#101214;color:#d6fd68;text-align:center;padding:24px;font:700 20px system-ui">Loading MAD museum…</div>
 <script>
@@ -407,16 +407,16 @@ function makeSpot(s){
   if(s.type==='wall'){
     // Subtle exhibition reserve panel: warmer than the plaster, never a
     // large status billboard. When occupied, the panel disappears.
-    base=box(3.35,3.45,.12,0xf1f0ea,0,3,0);
+    base=box(3.35,3.45,.12,room==='cellar'?0x373b3b:0xf1f0ea,0,3,0);
     g.add(base);
     if(!a){
       const reservedMat=new THREE.MeshStandardMaterial({
-        color:0xe3ddd2,roughness:.94,metalness:0
+        color:room==='cellar'?0x555353:0xe3ddd2,roughness:.94,metalness:0
       });
       const edgeMat=new THREE.MeshStandardMaterial({
         color:0xbfb7aa,roughness:.84,metalness:.06
       });
-      const display=box(3.07,3.10,.028,0xe3ddd2,0,3,.079,reservedMat);
+      const display=box(3.07,3.10,.028,room==='cellar'?0x555353:0xe3ddd2,0,3,.079,reservedMat);
       g.add(display);
       const e=.014,z=.098;
       g.add(box(3.10,e,.012,0xbfb7aa,0,4.555,z,edgeMat));
@@ -814,7 +814,10 @@ function renderCatalog(){
   container.replaceChildren();
   const query=$('catalogSearch').value.trim().toLowerCase();
   const selected=artworks.filter(a=>
-    (catalogFilter==='all'||(catalogFilter==='depot')===expired(a)) &&
+    (catalogFilter==='all' ||
+      (catalogFilter==='afterhours'&&a.audience==='after-hours')||
+      (catalogFilter==='depot'&&expired(a))||
+      (catalogFilter==='gallery'&&!expired(a)&&a.audience!=='after-hours')) &&
     [a.title,a.artist,a.desc].some(t=>String(t||'').toLowerCase().includes(query))
   ).sort((a,b)=>b.createdAt-a.createdAt);
   if(!selected.length){
@@ -827,7 +830,8 @@ function renderCatalog(){
     const card=document.createElement('div');card.className='card';
     const title=document.createElement('strong');title.textContent=a.title||'Untitled';
     const artist=document.createElement('span');
-    artist.textContent='BY '+(a.artist||'Anonymous')+' · '+(expired(a)?'DEPOT':'ON EXHIBITION');
+    artist.textContent='BY '+(a.artist||'Anonymous')+' · '+
+      (a.audience==='after-hours'?'AFTER HOURS':expired(a)?'DEPOT':'ON EXHIBITION');
     const p=document.createElement('p');p.style.margin='6px 0';
     p.textContent=String(a.desc||'').slice(0,160);
     const action=document.createElement('button');
@@ -840,7 +844,9 @@ function renderCatalog(){
 function visitArtwork(a){
   hide('catalog');
   const archive=expired(a);
-  room=archive?'depot':'gallery';
+  const originSpot=slots.find(s=>s.id===a.spotId);
+  room=archive?'depot':a.audience==='after-hours'?'cellar':
+    originSpot?.zone||'gallery';
   objects=[];createRoom();
   let x=0,z=0,front=0;
   if(archive){
@@ -1419,11 +1425,12 @@ function openEditor(){
   activeSpot=selection.slot;
   const wall=editingWall();
   const isCase=activeSpot.type==='vitrine';
+  if(room==='cellar')toast('After Hours: original works here stay in the underground gallery.');
   $('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '
     +(wall?'Wall':isCase?'Glass display case':activeSpot.type==='plinth'?'Pedestal':'Floor')+
     ' · 14-day exhibition';
   $('editorRule').textContent=wall
-    ? 'WALL ZONE · Paint a flat artwork, or make a 3D relief attached to this wall. The wall is a solid boundary: no sculpting through it.'
+    ? (room==='cellar'?'AFTER HOURS · This concealed gallery is for more unsettling or experimental art. The wall still blocks geometry behind it.':'WALL ZONE · Paint a flat artwork, or make a 3D relief attached to this wall. The wall is a solid boundary: no sculpting through it.')
     : isCase
       ? 'DISPLAY CASE · Create a sculpture or another small artwork. MAD automatically scales it to fit safely inside the transparent case.'
       : 'FREE-STANDING ZONE · Create a sculpture with full 3D freedom, or choose a painted artwork.';
@@ -1448,7 +1455,7 @@ function openEditor(){
   show('editor');
 }
 $('publish').onclick=async()=>{
-  if(publishingArt||room!=='gallery'||!editingSpotId)return;
+  if(publishingArt||room==='depot'||!editingSpotId)return;
   const chosen=findVacantSlot(editingSpotId,slots,artworks);
   if(!chosen.ok){toast(chosen.reason);return}
   const exhibitSlot=chosen.slot;
@@ -1462,6 +1469,7 @@ $('publish').onclick=async()=>{
   const wall=editingWall();
   const a={
     id:crypto.randomUUID(),spotId:exhibitSlot.id,
+    audience:room==='cellar'?'after-hours':'general',
     mounting:exhibitSlot.type,
     artist:$('artist').value.trim()||'Anonymous Artist',
     title:$('artTitle').value.trim(),

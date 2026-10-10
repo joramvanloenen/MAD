@@ -74,6 +74,39 @@ export function buildNorthWingPassage(scene){
   end.castShadow=false;
   return {mesh:hit,kind:'zone',to:'wing'};
 }
+/** Matching threshold at the SOUTH edge of the New Wing.
+ *  Visitors arrive inside this luminous passage and look straight into
+ *  the central exhibition hall. The stairs remain off to the right.
+ */
+export function buildWingArrivalCorridor(scene){
+  const centerZ=15.02,length=6.50;
+  // Use the same proportions and light materials as the main north corridor.
+  brick(scene,3.56,.15,length,plaster,0,-.055,centerZ);
+  brick(scene,3.56,.13,length,plaster,0,3.65,centerZ);
+  for(const x of [-1.79,1.79])
+    brick(scene,.13,3.55,length,plaster,x,1.775,centerZ);
+  const lamp=new THREE.MeshBasicMaterial({color:0xfafffd,toneMapped:false});
+  for(const z of [12.95,14.85,16.75]){
+    brick(scene,3.3,.08,.095,soffit,0,3.44,z);
+    brick(scene,1.65,.014,.09,lamp,0,3.391,z);
+    const light=new THREE.PointLight(0xffffff,14,5.3,1.8);
+    light.position.set(0,3.16,z);scene.add(light);
+  }
+  // The luminous end surface is BEHIND the entrant, not between them and
+  // the gallery. Looking north through Z=12 reveals the new artworks.
+  const end=brick(scene,3.36,3.42,.025,
+    new THREE.MeshBasicMaterial({color:0xf6faf7,toneMapped:false}),
+    0,1.71,18.23);
+  end.castShadow=false;
+  const returnTarget=trigger(scene,2.95,2.7,.10,0,1.52,17.65);
+  return {
+    mesh:returnTarget,kind:'zone',to:'gallery',
+    colliders:[
+      {x:-1.79,z:centerZ,hx:.13,hz:length/2},
+      {x:1.79,z:centerZ,hx:.13,hz:length/2}
+    ]
+  };
+}
 /** Three more rooms in a second wing, with sightlines through open portals. */
 export function buildNewWing(scene){
   const barriers=[];
@@ -111,14 +144,20 @@ export function buildStairToUpper(scene){
 }
 /** Discreet secret at ground level, flush with the west gallery wall. */
 export function buildSecretEntrance(scene){
-  const m=material(0xe9e8e2,.95),outline=material(0xbbb8b0,.6);
-  // Real hole is cut in index.html's west wall, this flush pivot closes it.
-  const panel=brick(scene,.14,2.65,2.55,m,-19.28,1.325,4.42);
-  for(const z of [3.13,5.71])
-    brick(scene,.03,2.71,.02,outline,-19.19,1.36,z);
-  brick(scene,.03,.025,2.58,outline,-19.19,2.68,4.42);
-  const rivet=brick(scene,.046,.18,.07,gold,-19.185,1.18,5.41);
-  rivet.castShadow=false;
+  // Nearly indistinguishable from the adjoining gallery plaster. No exposed
+  // frame, gold handle or high-contrast outline to advertise the passage.
+  const m=material(0xf2f1ea,.95);
+  const panel=new THREE.Group();
+  // Pivot on the edge of the west wall opening, so the entire leaf swings
+  // as a real secret door rather than rotating about its centre.
+  panel.position.set(-19.34,0,3.145);
+  scene.add(panel);
+  brick(panel,.105,2.66,2.55,m,0,1.33,1.275);
+  // Only an almost imperceptible vertical joint and small recessed push pad.
+  const seam=material(0xe5e4df,.97);
+  brick(panel,.012,2.52,.006,seam,.064,1.30,2.545);
+  const push=material(0xe7e6df,.97);
+  brick(panel,.008,.095,.095,push,.062,1.12,2.28);
   // A dim visible stair flight behind the concealed opening.
   for(let i=0;i<11;i++){
     const depth=.60,z=4.42,x=-20.25-i*.52,y=-(i+1)*.24;

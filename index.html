@@ -73,9 +73,9 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.m
 import { MuseumGI } from './gi.js';
 import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-cellar5';
 import { buildDepotArchive } from './museum-depot.js?v=20261010-expansion3';
-import { buildWhiteTransition, buildNorthWingPassage, buildNewWing,
+import { buildWhiteTransition, buildNorthWingPassage, buildWingArrivalCorridor, buildNewWing,
   buildStairToUpper, buildSecretEntrance, buildCellar, buildUpperGallery }
-  from './museum-expansion.js?v=20261010-cellar5';
+  from './museum-expansion.js?v=20261010-wing6';
 import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js?v=20261010-mixed6';
 import { MixedMediaStudio } from './mixed-media.js?v=20261010-mixed6';
@@ -336,7 +336,15 @@ if(room==='gallery'){
   scene.add(box(39,8,.45,mat,0,4,-12));
   scene.add(box(.45,8,24,mat,-19.5,4,0));
 }
-scene.add(box(39,8,.45,mat,0,4,12));
+// An actual open portal in the south New Wing wall meets its arrival
+// corridor. The walls and header frame the view into the central gallery.
+if(room==='wing'){
+  for(const [width,x] of [[17.70,-10.65],[17.70,10.65]])
+    scene.add(box(width,8,.45,mat,x,4,12));
+  scene.add(box(3.60,4.45,.45,mat,0,5.775,12));
+}else{
+  scene.add(box(39,8,.45,mat,0,4,12));
+}
 if(room!=='cellar'){
   // Full-size east doorway, no blocking wall behind the actual door.
   for(const [w,d,x,z] of [[.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]])
@@ -356,6 +364,9 @@ if(room==='gallery'){
   objects.push(buildSecretEntrance(scene));
 }else if(room==='wing'){
   environment.colliders.push(...buildNewWing(scene));
+  const arrival=buildWingArrivalCorridor(scene);
+  objects.push(arrival);
+  environment.colliders.push(...arrival.colliders);
   objects.push(buildStairToUpper(scene));
 }else if(room==='upper'){
   const upper=buildUpperGallery(scene);
@@ -647,7 +658,7 @@ function updateTarget(){
         ? 'E · DESCEND THE STAIRS'
         : 'E · ENTER '+interactTarget.to.toUpperCase();
   else if(interactTarget.kind==='secret')
-    prompt.textContent='E · OPEN THE UNMARKED DOOR';
+    prompt.textContent='E · INSPECT THE WALL SEAM';
   else if(interactTarget.kind==='rack')
     prompt.textContent='E · '+(interactTarget.rack.target>.5?'CLOSE':'SLIDE')+
       ' ARCHIVE RACK  '+interactTarget.rack.id;
@@ -681,10 +692,10 @@ function transitionToRoom(destination,{via='',dark=false}={}){
     if(destination==='cellar')unlockCellarCollection();
     const spawn={
       gallery:from==='cellar'?{x:-16.5,z:4.4,yaw:-Math.PI/2}:
-        from==='wing'?{x:15.8,z:-9.1,yaw:Math.PI}:
+        from==='wing'?{x:15.95,z:-14.65,yaw:Math.PI}:
         {x:16.35,z:.05,yaw:Math.PI/2},
       depot:{x:16.35,z:.05,yaw:Math.PI/2},
-      wing:from==='upper'?{x:14.6,z:5.75,yaw:0}:{x:15.5,z:8.1,yaw:0},
+      wing:from==='upper'?{x:14.6,z:5.75,yaw:0}:{x:0,z:15.35,yaw:0},
       upper:{x:15.5,z:5.75,yaw:0},
       cellar:{x:-13.35,z:4.42,yaw:-Math.PI/2}
     }[destination]||{x:0,z:8,yaw:0};
@@ -711,8 +722,8 @@ function interact(){
     const swing=now=>{
       if(!roomChanging||!panel)return;
       const t=Math.min(1,(now-start)/650);
-      panel.rotation.y=-1.15*t;
-      panel.position.z=4.42-.58*t;
+      // Hinged at the edge of the hidden panel; opens into the gallery.
+      panel.rotation.y=1.15*t;
       if(t<1)requestAnimationFrame(swing);
     };
     transitionToRoom('cellar',{via:'secret',dark:true});
@@ -757,7 +768,10 @@ depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.ov
 camera.position.x=clamp(camera.position.x,-18.3,inEastHall?26.15:18.3);
 const inNorthHall=room==='gallery'&&camera.position.x>14.3&&
   camera.position.x<17.75&&camera.position.z< -10.9;
-camera.position.z=clamp(camera.position.z,inNorthHall?-17.55:-11.15,11.15);
+const inWingArrival=room==='wing'&&Math.abs(camera.position.x)<1.42&&
+  camera.position.z>10.8;
+camera.position.z=clamp(camera.position.z,inNorthHall?-17.55:-11.15,
+  inWingArrival?17.85:11.15);
 if(camera.position.x>19.25)camera.position.z=clamp(camera.position.z,-1.17,1.17);
 if(environment?.colliders?.length){
   const p=camera.position,radius=.38;

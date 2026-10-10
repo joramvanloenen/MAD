@@ -70,7 +70,12 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
 
   // Flush wall skirting and ceiling shadow-gap details.
   for(const z of [-11.72,11.72]){
-    scene.add(mk(38.4,.17,.09,trim,0,.105,z));
+    if(room==='wing'&&z>0){
+      // Preserve the threshold: skirting ends at either side of the
+      // New Wing hallway rather than crossing the entrance at floor level.
+      for(const x of [-10.54,10.54])
+        scene.add(mk(17.32,.17,.09,trim,x,.105,z));
+    }else scene.add(mk(38.4,.17,.09,trim,0,.105,z));
     if(!isCellar)scene.add(mk(38.4,.045,.09,black,0,7.69,z));
   }
   // Skirting follows the openings, rather than spanning the cellar stair

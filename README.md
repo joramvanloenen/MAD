@@ -58,6 +58,12 @@ The main gallery's west wall conceals an unmarked ground-level door near Z≈4.4
 
 **Content note:** The cellar is intended for unsettling or mature artistic themes, but this static prototype has neither age verification nor a complete moderation system. Actual public hosting of mature visitor content would require moderation policies, warnings, and access controls. Moving up/down the stairs uses an animated scene change, not fully continuous multi-floor locomotion.
 
+## Artwork editor layout (desktop / mobile)
+
+The editor now runs as a dedicated workstation instead of a single vertically scrolling modal. Desktop presents a nearly full-window 2D/3D canvas and a fixed right-hand inspector with **Create**, **Appearance** and **Artwork Info** tabs. **Place in Museum** is always in the bottom bar and requires the title and description.
+
+On phones the editor fills the available dynamic viewport. All five modes (Paint, 3D Form, Voxels, Clay, Mixed) stay simultaneously visible in a small fixed tab row. The canvas gets the flexible upper area; compact tool panes occupy the lower dock, and the publish action stays fixed at the bottom. The full page doesn't scroll. Complex mixed-media controls are split into five categories (Materials, Assemble, Transform, Paint, Cloth), so visitors can access every action without scrolling through a long form. Landscape phones use a side-by-side arrangement. Tool state and input nodes are preserved when switching panes.
+
 ## Mixed-media atelier
 
 Choose **MIXED MEDIA** from the artwork editor. Combine materials using the palette; select parts by tapping the 3D model or the component selector. The Move, Rotate, Paint and Orbit modes work with mouse or touch. Cut wood using the Saw Cut profile tool, use the position/rotation/scale controls, and Glue to Previous to make real parent-child assemblies. Fabric can be draped live, settled and frozen. Paint dabs adhere to the selected piece and survive transformations. **Bake & Check Mesh** reports triangle and vertex counts; **Place in Museum** always bakes, including remaining active fabric, into a static indexed display mesh. In glass showcases the editor preview is scaled down while the baked artwork stays at its intrinsic size for accurate fitting.

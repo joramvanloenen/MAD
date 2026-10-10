@@ -230,7 +230,14 @@ export function buildCellar(scene,{eco=false}={}){
   // west to climb out, then get the normal scene transition upstairs.
   return {
     mesh:trigger(scene,.18,2.42,2.23,-14.79,1.38,stairZ),
-    kind:'zone',to:'gallery',via:'stairs-up'
+    kind:'zone',to:'gallery',via:'stairs-up',
+    colliders:[
+      // Retaining side walls and the physical staircase are impassable.
+      // Visitors use the short transition from the bottom landing.
+      {x:-17.25,z:3.06,hx:2.28,hz:.11},
+      {x:-17.25,z:5.78,hx:2.28,hz:.11},
+      {x:-17.27,z:stairZ,hx:1.99,hz:1.12}
+    ]
   };
 }
 export function buildUpperGallery(scene){

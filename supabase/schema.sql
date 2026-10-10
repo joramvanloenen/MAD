@@ -138,3 +138,8 @@ execute function public.mad_guard_approval();
 
 -- Supabase service-role bypasses RLS and must NEVER be included in GitHub
 -- Pages JavaScript, browser developer tools, or mad-config.js.
+
+-- Lock down security-definer functions (trigger remains callable internally).
+revoke all on function public.mad_guard_approval() from public, anon, authenticated;
+revoke all on function public.mad_is_admin() from public, anon;
+grant execute on function public.mad_is_admin() to authenticated;

@@ -58,7 +58,7 @@ export function buildFlapSequence(artworks,messages,now=Date.now()){
     Number.isFinite(a.createdAt)&&a.createdAt<=now&&now-a.createdAt<14*86400000
   ).sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
   const announcements=recent.map(a=>
-    'JUST ADDED TO MAD\n'+flapLine(a.title||'UNTITLED').slice(0,16)+
+    'NEW ART IN MAD\n'+flapLine(a.title||'UNTITLED').slice(0,16)+
     '\nBY '+flapLine(a.artist||'ANONYMOUS').slice(0,13)
   );
   const notes=messages.length?messages:DEFAULT_FLAP_MESSAGES;
@@ -80,7 +80,7 @@ export class SplitFlapBoard{
     this.messages=loadFlapMessages();
     this.sequence=buildFlapSequence(artworks,this.messages);
     this.sequenceIndex=0;this.lastSwitch=performance.now();this.holdMs=8500;
-    this.flipping=false;this.transitionAt=0;
+    this.flipping=false;this.transitionAt=0;this.targetLines=null;this.lastDraw=-Infinity;
     this.tiles=Array.from({length:48},()=>({from:' ',to:' ',delay:0}));
     this.canvas=document.createElement('canvas');
     this.canvas.width=1344;this.canvas.height=545;
@@ -126,7 +126,7 @@ export class SplitFlapBoard{
   showNewest(art){
     this.refreshFeed();
     if(!art)return;
-    const words='JUST ADDED TO MAD\n'+flapLine(art.title).slice(0,16)+
+    const words='NEW ART IN MAD\n'+flapLine(art.title).slice(0,16)+
       '\nBY '+flapLine(art.artist).slice(0,13);
     this._transition(splitFlapLines(words),performance.now());
   }
@@ -136,6 +136,7 @@ export class SplitFlapBoard{
   }
   _transition(lines,now,immediate=false){
     this.lastSwitch=now;this.transitionAt=now;this.flipping=!immediate;
+    this.targetLines=lines.slice();
     for(let row=0;row<3;row++)for(let col=0;col<16;col++){
       const i=row*16+col,tile=this.tiles[i];
       tile.from=tile.to;tile.to=lines[row][col];
@@ -153,11 +154,14 @@ export class SplitFlapBoard{
     this._draw(now);
     if(now-this.transitionAt>=1170){
       this.flipping=false;
-      this._fillImmediately(splitFlapLines(this.sequence[this.sequenceIndex]));
-      this._draw(now);
+      this._fillImmediately(this.targetLines);
+      this._draw(now,true);
     }
   }
-  _draw(now){
+  _draw(now,force=false){
+    // Cap 2D texture redraws at 25fps to protect mobile GPU bandwidth.
+    if(!force&&now-this.lastDraw<40)return;
+    this.lastDraw=now;
     const ctx=this.ctx,W=this.canvas.width,H=this.canvas.height;
     ctx.fillStyle='#101213';ctx.fillRect(0,0,W,H);
     const width=65,height=91,gap=6,rowGap=31;

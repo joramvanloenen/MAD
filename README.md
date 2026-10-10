@@ -28,7 +28,8 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI q
 ## Project layout
 
 - `museum-environment.js`: connected galleries, wood PBR floor, track fixtures, lights and furniture.
-- `museum-depot.js`: 20 sliding white-metal mesh picture racks guided by floor and ceiling rails. Archived paintings and wall reliefs mount on the sliding frames (up to 80); E/USE pulls a rack out or returns it. Other artworks remain on separate compact archive stands. Collection navigation opens the appropriate rack. Rack collision locations update as they move.
+- `museum-depot.js`: 20 sliding white-metal mesh picture racks guided by floor and ceiling rails. Archived paintings and wall reliefs mount on the sliding frames (up to 80); E/USE pulls a rack out or returns it. Other artworks remain on separate compact archive stands. Collection navigation opens the appropriate rack.
+- `museum-expansion.js`: physically open north/east passageways, illuminated white transitional hall, three connected New Wing rooms, upstairs exhibition rooms with a stair transition, concealed west-wall service door with steps descending to the underground After Hours gallery, atmospheric study works and reduced mobile cellar lighting. Gallery transit uses a short faded scene transition at level changes. Rack collision locations update as they move.
 - `museum-vitrines.js`: six interactive protective glass display cases (V1–V6), including the original static showcase location, fitted artwork placement, small exhibit plaques and collision volumes. Works can be painted, sculpted, voxel-built or clay-sculpted; completed works are scaled to fit safely inside the glass. A showcase preview appears in the 3D editors, and archived cases are preserved in the Depot.
 - `gi.js`: directional multi-bounce irradiance probe approximation.
 - `art-presentation.js`: gallery frames, artwork dimensions, PBR materials.
@@ -47,3 +48,11 @@ This remains a prototype. Cloud credentials are not configured. Placement reserv
 ## Footstep recording license
 
 The samples `assets/audio/footstep_wood_000.ogg` through `footstep_wood_004.ogg` come from **Kenney — Impact Sounds** (CC0 1.0 public domain dedication). They replace the former synthesized footsteps and are hosted inside MAD to avoid third-party hotlink dependencies. Original source: https://kenney.nl/assets/impact-sounds. The audio files were retrieved from the CC0 collection in https://github.com/iree-gd/iree.gd/tree/main/sample/assets/audio/impact. The music/ambient system is not affected by these clips.
+
+## Expanded galleries and After Hours
+
+From the main gallery, enter the new north passage near the north-east corner to reach the **New Wing**. The New Wing has three adjoining gallery areas and a staircase leading to the **upper-floor exhibition**. The main east Depot door now looks through a physically open short white corridor (no wall directly behind the doorway); walk to the bright end and use the interaction control to switch sections.
+
+The main gallery's west wall conceals an unmarked ground-level door near Z≈4.4. Interact with it to reveal stairs descending to **After Hours**, a moody underground exhibition. Seven special wall spots (C1–C7) accept visitor paintings and wall reliefs there. After Hours works remain in the cellar rather than joining the normal 14-day Depot rotation and are not included in the regular gallery split-flap messages. A few atmospheric study paintings are built into the cellar; they are generated art, not purported community submissions. Once visitors discover the cellar, its collection appears in their Collection menu.
+
+**Content note:** The cellar is intended for unsettling or mature artistic themes, but this static prototype has neither age verification nor a complete moderation system. Actual public hosting of mature visitor content would require moderation policies, warnings, and access controls. Moving up/down the stairs uses an animated scene change, not fully continuous multi-floor locomotion.

@@ -43,7 +43,7 @@
     <button data-mixed-tool="paint">PAINT</button>
     <button data-mixed-tool="orbit">ORBIT</button>
   </div>
-  <div class="toolrow"><button id="mixedRemove">REMOVE PART</button><button id="mixedGlue">GLUE TO PREVIOUS</button></div>
+  <div class="toolrow"><button id="mixedDuplicate">DUPLICATE</button><button id="mixedRemove">REMOVE</button><button id="mixedGlue">GLUE TO PREVIOUS</button></div><label for="mixedPartColor">Component base color</label><input id="mixedPartColor" type="color" value="#ba8051" style="width:80px;height:40px" aria-label="Selected component color">
   <label for="mixedCut">Saw-cut profile (wood panels)</label>
   <div class="toolrow"><select id="mixedCut" style="flex:1">
     <option value="straight">Straight</option><option value="bevel">Diagonal corner</option>
@@ -1450,6 +1450,10 @@ function syncMixedEditorUI(studio){
     if(part&&document.activeElement!==$(id))$(id).value=Number(value).toFixed(2);
   }
   $('mixedSaw').disabled=!part||part.kind!=='wood';
+  $('mixedDuplicate').disabled=!part||studio.parts.length>=25;
+  $('mixedPartColor').disabled=!part;
+  if(part&&document.activeElement!==$('mixedPartColor'))
+    $('mixedPartColor').value=part.color;
   $('mixedDrape').disabled=!part||part.kind!=='fabric';
   $('mixedGlue').disabled=!part||studio.parts.length<2;
   $('mixedRemove').disabled=!part;
@@ -1476,6 +1480,10 @@ document.querySelectorAll('[data-mixed-tool]').forEach(button=>{
     syncMixedEditorUI(mixedStudio);
   };
 });
+$('mixedDuplicate').onclick=()=>{
+  if(!mixedStudio?.duplicate())toast('Select an element or remove parts before duplicating.');
+};
+$('mixedPartColor').oninput=()=>mixedStudio?.setPartColor($('mixedPartColor').value);
 $('mixedRemove').onclick=()=>mixedStudio?.remove();
 $('mixedGlue').onclick=()=>{
   if(!mixedStudio?.glue())toast('Add two components first.');

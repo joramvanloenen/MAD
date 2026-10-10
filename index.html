@@ -639,7 +639,7 @@ function transitionToRoom(destination,{via='',dark=false}={}){
   },760);
 }
 function interact(){
-  if(!interactTarget)return;
+  if(roomChanging||!interactTarget)return;
   const o=interactTarget;
   if(o.kind==='portal'){
     const destination=room==='gallery'?'depot':
@@ -695,7 +695,7 @@ if(depotDoorLeaf){
   const goal=nearby?-1.14:0;
   depotDoorLeaf.rotation.y+=(goal-depotDoorLeaf.rotation.y)*.08;
 }
-depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;const inEastHall=room!=='cellar'&&camera.position.x>17.9&&Math.abs(camera.position.z)<1.32;
+depotArchive?.update(now);splitFlap?.update(now);if(!document.querySelector('.overlay.open'))gi?.update();let dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;if(!roomChanging&&!$('start').classList.contains('open')&&!$('editor').classList.contains('open')&&!$('info').classList.contains('open')&&!$('flapEditor').classList.contains('open')){const prevX=camera.position.x,prevZ=camera.position.z;let f=Number(!!keys.KeyW)-Number(!!keys.KeyS)-moveTouch.y,side=Number(!!keys.KeyD)-Number(!!keys.KeyA)+moveTouch.x;let mag=Math.hypot(f,side);if(mag>1){f/=mag;side/=mag}const speed=keys.ShiftLeft?8:4.3;camera.position.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*side)*dt*speed;camera.position.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*side)*dt*speed;const inEastHall=room!=='cellar'&&camera.position.x>17.9&&Math.abs(camera.position.z)<1.32;
 camera.position.x=clamp(camera.position.x,-18.3,inEastHall?26.15:18.3);
 const inNorthHall=room==='gallery'&&camera.position.x>14.3&&
   camera.position.x<17.75&&camera.position.z< -10.9;

@@ -166,19 +166,8 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
       }
       colliders.push({x,z:.1,hx:1.35,hz:.40});
     }
-    // A thin museum vitrine, intentionally away from available art pads.
-    const caseX=-16.6,caseZ=6;
-    scene.add(mk(1.05,.65,1.05,white,caseX,.325,caseZ));
-    const glass=new THREE.MeshPhysicalMaterial({
-      color:0xecf7f7,metalness:0,roughness:.065,transparent:true,
-      opacity:.2,depthWrite:false,side:THREE.DoubleSide
-    });
-    for(const offset of [-.53,.53]){
-      scene.add(mk(.012,1.08,1.05,glass,caseX+offset,1.18,caseZ));
-      scene.add(mk(1.05,1.08,.012,glass,caseX,1.18,caseZ+offset));
-    }
-    scene.add(mk(1.08,.055,1.08,brushed,caseX,1.75,caseZ));
-    colliders.push({x:caseX,z:caseZ,hx:.61,hz:.61});
+    // All display cases are now real, interactive artwork spots built by
+    // museum-vitrines.js. No duplicate decorative case is created here.
   }
   return {colliders,lights,dispose(){
     // Materials and geometries are disposed by the parent scene traversal.

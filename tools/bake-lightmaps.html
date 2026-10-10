@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAD — Offline Lightmap Baker</title>
+<style>
+:root{color-scheme:dark;font:15px system-ui,sans-serif;background:#171e20;color:#edf0eb}
+body{margin:0 auto;padding:clamp(14px,4vw,42px);max-width:930px}
+h1{font-size:clamp(27px,5vw,44px);margin-bottom:6px}
+p{color:#afbeb6;line-height:1.6}button{border:0;background:#d6fd68;color:#16251d;
+border-radius:8px;padding:13px 18px;font-weight:750;cursor:pointer}
+button:disabled{opacity:.45}a{color:#d6fd68}
+label{display:block;margin:14px 0 6px}select{background:#2d3836;color:#eef4ef;padding:9px;border:1px solid #59635e;border-radius:6px}
+#progress{white-space:pre-wrap;font:13px ui-monospace,monospace;line-height:1.8;
+padding:17px;background:#222b2c;border-radius:8px;min-height:60px}
+#results{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:22px}
+.result{padding:12px;border:1px solid #505d58;border-radius:8px;background:#20292b}
+.result img{width:100%;image-rendering:pixelated;border-radius:4px}
+small{color:#aab5b0}
+</style></head><body>
+<a href="../">← MAD Museum</a>
+<h1>Static lightmap baker</h1>
+<p>Developer tool. This is an <strong>offline</strong> diffuse GI bake of the fixed architectural proxy, not a per-visitor runtime renderer. It ray-traces sampled wall, floor and ceiling illumination and exports the baked RGB565 atlases as a JavaScript asset. Visitor-made art and movable display cases are not baked.</p>
+<label for="quality">Diffuse hemisphere rays per texel</label>
+<select id="quality"><option value="6">6 rays — quick</option>
+<option value="12" selected>12 rays — detailed</option><option value="24">24 rays — slow</option></select>
+<p><button id="bake">Bake all 5 museum levels</button>
+<button id="download" disabled>Save baked lightmaps JS</button></p>
+<pre id="progress" aria-live="polite">Ready to bake. The live museum reads static-lightmaps-data.js.</pre>
+<div id="results"></div>
+<script type="module">
+import {bakeRoom,ROOMS,TILE,unpack565} from '../static-lightmap-baker.js?v=1';
+const progress=document.getElementById('progress');
+const results=document.getElementById('results');
+let output=null;
+const to64=bytes=>{
+ let s='';
+ for(let i=0;i<bytes.length;i+=8192)
+   s+=String.fromCharCode(...bytes.subarray(i,i+8192));
+ return btoa(s);
+};
+document.getElementById('bake').onclick=async()=>{
+ const start=performance.now();output=null;
+ results.replaceChildren();
+ document.getElementById('bake').disabled=true;
+ document.getElementById('download').disabled=true;
+ const lines=[
+  '// Generated offline by MAD/tools/bake-lightmaps.html',
+  '// Fixed 2x3 surface charts (RGB565, no runtime ray tracing).',
+  'export const STATIC_LIGHTMAPS={'
+ ];
+ try{
+  for(const room of ROOMS){
+   progress.textContent='Baking '+room.toUpperCase()+'…';
+   await new Promise(resolve=>setTimeout(resolve,30));
+   const map=bakeRoom(room,{tile:TILE,rays:+document.getElementById('quality').value});
+   const rgba=unpack565(map.data);
+   const canvas=document.createElement('canvas');
+   canvas.width=map.width;canvas.height=map.height;
+   canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba),
+     map.width,map.height),0,0);
+   const card=document.createElement('div');card.className='result';
+   const heading=document.createElement('h3');heading.textContent=room.toUpperCase();
+   const image=document.createElement('img');image.src=canvas.toDataURL('image/png');
+   image.alt='Baked indirect lighting atlas for '+room;
+   const note=document.createElement('small');
+   note.textContent=map.width+' × '+map.height+' · RGB565';
+   card.append(heading,image,note);results.append(card);
+   lines.push('  '+room+': '+JSON.stringify(to64(map.data))+',');
+  }
+  lines.push('};','export const STATIC_LIGHTMAP_TILE='+TILE+';','');
+  output=lines.join('\n');
+  progress.textContent='All 5 room atlases baked in '+
+   ((performance.now()-start)/1000).toFixed(2)+' s. Save and replace '+
+   'static-lightmaps-data.js in the MAD repository to publish this lighting update.';
+  document.getElementById('download').disabled=false;
+ }catch(e){
+  progress.textContent='Bake failed: '+e.message;
+  console.error(e);
+ }finally{document.getElementById('bake').disabled=false}
+};
+document.getElementById('download').onclick=()=>{
+ if(!output)return;
+ const blob=new Blob([output],{type:'text/javascript'});
+ const link=document.createElement('a');
+ link.href=URL.createObjectURL(blob);link.download='static-lightmaps-data.js';
+ link.click();setTimeout(()=>URL.revokeObjectURL(link.href),2000);
+};
+</script>
+</body></html>

@@ -22,24 +22,30 @@
 #mixedPanel input[type=color]{padding:4px;background:#272d2c}
 @media(max-width:720px){#editor .tabrow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#editor .tab{white-space:nowrap;flex:0 0 auto;font-size:11px;padding:11px 12px}#mixedPanel .toolrow button{flex:1}}
 </style><link rel="stylesheet" href="./editor-layout.css?v=20261010-editor2"></head><body>
-<div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight"><button class="pill" id="mobileMenuBtn" style="display:none">MENU</button><button class="pill active" id="galleryBtn">GALLERY</button><button class="pill" id="depotBtn">DEPOT</button><button class="pill" id="giBtn" title="Toggle saved static GI lightmap">LIGHT: BAKED</button><button class="pill" id="soundBtn" title="Toggle museum audio">SOUND: ON</button><button class="pill" id="catalogBtn">COLLECTION</button><button class="pill" id="flapBtn" title="Edit the gallery split-flap display">DISPLAY</button><span class="pill" id="cloudStatus">LOCAL ONLY</span><button class="pill hidden" id="syncBtn" title="Refresh public collection">SYNC</button><button class="pill" id="accountBtn">SIGN IN</button><button class="pill hidden" id="adminBtn">ADMIN</button><button class="pill" id="aboutBtn">ABOUT</button></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> baked lighting<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">STATIC GLOBAL ILLUMINATION</span></div></div>
-<div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">With Google sign-in you can save artworks to your account when cloud storage is connected. Public works are reviewed first.</div><div class="toolrow"><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><button class="btn secondary" id="startGoogleBtn">SIGN IN WITH GOOGLE</button></div><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
-<div class="overlay" id="account"><div class="modal" style="max-width:490px">
+<div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight"><button class="pill" id="mobileMenuBtn" style="display:none">MENU</button><button class="pill active" id="galleryBtn">GALLERY</button><button class="pill" id="depotBtn">DEPOT</button><button class="pill" id="giBtn" title="Toggle saved static GI lightmap">LIGHT: BAKED</button><button class="pill" id="soundBtn" title="Toggle museum audio">SOUND: ON</button><button class="pill" id="catalogBtn">COLLECTION</button><button class="pill" id="flapBtn" title="Edit the gallery split-flap display">DISPLAY</button><span class="pill" id="cloudStatus">LOCAL ONLY</span><button class="pill hidden" id="syncBtn" title="Refresh public collection">SYNC</button><button class="pill" id="accountBtn">MAINTENANCE</button><button class="pill hidden" id="adminBtn">ADMIN</button><button class="pill" id="aboutBtn">ABOUT</button></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> baked lighting<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">STATIC GLOBAL ILLUMINATION</span></div></div>
+<div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">No sign-in required. Give your artwork a title and description, then place it directly in the shared museum.</div><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
+<div class="overlay" id="account"><div class="modal" style="max-width:480px">
 <button class="close" data-close="account" aria-label="Close">×</button>
-<h1>Your MAD account</h1>
-<p id="accountStatus" aria-live="polite">Checking your connection…</p>
-<div class="notice" id="accountHelp">Sign in with Google to save creations to the shared museum. Public display requires approval.</div>
-<div class="toolrow"><button class="btn" id="googleSignIn">CONTINUE WITH GOOGLE</button><button class="btn secondary hidden" id="googleSignOut">SIGN OUT</button></div>
-<p id="accountEmail" class="stat"></p>
-<div class="toolrow"><button class="btn secondary hidden" id="migrateArtworks">UPLOAD MY OLDER LOCAL ARTWORKS</button></div>
+<h1>MAD · maintenance</h1>
+<p id="accountStatus" class="stat">Visitors can freely create and place artworks. Maintenance access requires a private code.</p>
+<label for="maintenanceCode">Admin access code</label>
+<input id="maintenanceCode" type="password" autocomplete="off" spellcheck="false" placeholder="Enter your maintenance code">
+<p id="accountError" class="stat" role="alert"></p>
+<div class="toolrow"><button class="btn" id="maintenanceLogin">UNLOCK MAINTENANCE</button></div>
+<div class="notice">The code is checked on the server. Public artwork submissions never require a login.</div>
+<h3>Older artworks</h3>
+<button class="btn secondary hidden" id="migrateArtworks">PUBLISH OLDER BROWSER ARTWORKS</button>
 <p id="importReport" class="stat"></p>
 </div></div>
-<div class="overlay" id="admin"><div class="modal" style="max-width:760px">
+<div class="overlay" id="admin"><div class="modal" style="max-width:740px">
 <button class="close" data-close="admin" aria-label="Close">×</button>
-<h1>MAD · artwork review</h1>
-<p>Only a verified Google administrator may approve or reject artworks. Approved submissions become visible to everyone.</p>
-<div class="toolrow"><button class="btn secondary" id="refreshPending">PENDING SUBMISSIONS</button><button class="btn secondary" id="showApproved">MANAGE PUBLISHED ART</button></div>
-<p class="stat" id="adminStatus" role="status"></p><div id="adminList"></div>
+<h1>MAD · maintenance</h1>
+<p>Manage public artworks without changing visitor access. Hide, restore or permanently delete submitted works.</p>
+<div class="toolrow"><button class="btn secondary" id="showApproved">PUBLISHED</button>
+<button class="btn secondary" id="refreshPending">HIDDEN WORKS</button>
+<button class="btn secondary" id="maintenanceLogout">LOG OUT</button></div>
+<p class="stat" id="adminStatus" role="status"></p>
+<div id="adminList"></div>
 </div></div>
 <div class="overlay" id="editor"><div class="modal"><button class="close" data-close="editor">×</button><h1>Create an artwork</h1><p id="spotLabel">Selected exhibition space</p><p id="editorRule" class="notice">Choose your tools for this exhibition spot.</p><div class="tabrow"><button class="tab active" data-mode="painting">2D PAINTING</button><button class="tab" data-mode="sculpture">3D SCULPTURE</button><button class="tab" data-mode="voxel">VOXEL SCULPT</button><button class="tab" data-mode="clay">SMOOTH CLAY</button><button class="tab" data-mode="mixed">MIXED MEDIA</button></div><div class="editorGrid"><div><div id="paintPanel"><div class="toolrow" id="paintTools"><button data-tool="brush" class="selected">Brush</button><button data-tool="watercolor">Watercolor</button><button data-tool="charcoal">Charcoal</button><button data-tool="spray">Spray</button><button data-tool="smudge">Smudge</button><button data-tool="eraser">Eraser</button><button data-tool="line">Line</button><button data-tool="circle">Circle</button></div><div class="toolrow"><button id="paintUndo" title="Undo last stroke">↶ Undo</button><button id="paintRedo" title="Redo undone stroke">↷ Redo</button><button id="paintPattern">Procedural pattern</button><label style="display:flex;align-items:center;gap:5px;margin:0;color:#dbe2de"><input id="paintMirror" type="checkbox" style="width:18px;height:18px;accent-color:#d6fd68"> Mirror</label></div><canvas id="artCanvas" width="512" height="512"></canvas><p class="stat">Draw directly on the canvas. Exported as a framed gallery painting.</p></div><div id="sculptPanel" class="hidden"><div id="clayTools" class="hidden"><div class="toolrow"><button class="selected" data-clay="add">Build</button><button data-clay="subtract">Carve</button><button data-clay="smooth">Smooth</button><button data-clay="flatten">Flatten</button><button data-clay="paint">Paint</button><button id="clayReset">Reset</button></div><label>Clay brush strength</label><input class="range" id="clayStrength" type="range" min="5" max="50" value="22"><p class="stat">Left drag sculpts · Right drag or Alt+drag orbits · The existing brush-size slider controls radius.</p></div><div id="sculptView"></div><p class="stat" id="sculptHelp">Drag to orbit the sculpture. Procedural shapes can be recolored and customized.</p></div><div id="voxelPanel" class="hidden"><div class="toolrow"><button id="voxelAdd" class="selected">+ Add</button><button id="voxelPaint">Paint</button><button id="voxelRemove">− Remove</button><button id="voxelClear">Clear</button></div><p class="stat" id="voxelHelp">Double-resolution voxel detail. Add blocks or paint each block a different color; drag to orbit.</p><div id="voxelView" style="height:310px;background:#101415;border-radius:10px;overflow:hidden;touch-action:none"></div></div></div><div><label>Artist name</label><input id="artist" maxlength="60" placeholder="Your name" value="Anonymous Artist"><label for="artTitle">Artwork title <span style="color:#d6fd68">*</span></label><input id="artTitle" maxlength="100" required aria-required="true" placeholder="Give your artwork a name"><label for="artDesc">Artwork description <span style="color:#d6fd68">*</span></label><textarea id="artDesc" maxlength="500" required aria-required="true" placeholder="Describe your artwork and what inspired it..."></textarea><div id="shapePanel" class="hidden"><label>Form</label><select id="shape"><option value="torus">Twisted Torus</option><option value="sphere">Organic Blob</option><option value="knot">Knot</option><option value="column">Abstract Column</option><option value="crystal">Faceted Crystal</option><option value="petals">Petal Structure</option><option value="ribbon">Flowing Ribbon</option></select><label>Complexity</label><input class="range" id="complexity" type="range" min="1" max="9" value="5"><label>Distortion</label><input class="range" id="distortion" type="range" min="0" max="100" value="30"><div id="reliefControls" class="hidden"><label>Wall relief depth (always in front of wall)</label><input class="range" id="reliefDepth" type="range" min="10" max="100" value="65"></div></div>
 <div id="mixedPanel" class="hidden">
@@ -1679,23 +1685,15 @@ function artworkDetailsValid(){
 }
 function updatePublishState(){
   const valid=artworkDetailsValid();
-  const loginNeeded=museumStore.enabled&&!museumStore.signedIn;
-  $('publish').disabled=!valid||loginNeeded||publishingArt;
-  $('publishHint').textContent=loginNeeded
-    ? 'Google sign-in required before saving this artwork to the cloud.'
-    :valid
-      ? 'Ready to save — your artwork is submitted for review before appearing publicly.'
-      : 'Required: give your artwork a title and description before placing it.';
+  $('publish').disabled=!valid||publishingArt;
+  $('publishHint').textContent=valid
+    ? 'Ready to place — visible to everybody as soon as the server accepts it.'
+    : 'Required: give your artwork a title and description before placing it.';
 }
 $('artTitle').addEventListener('input',updatePublishState);
 $('artDesc').addEventListener('input',updatePublishState);
 function openEditor(){
   if(room==='depot'||!editingSpotId)return;
-  if(museumStore.enabled&&!museumStore.signedIn){
-    show('account');
-    toast('Sign in with Google before creating a cloud artwork.');
-    return;
-  }
   const selection=findVacantSlot(editingSpotId,slots,artworks);
   if(!selection.ok){toast(selection.reason);editingSpotId=null;activeSpot=null;return}
   activeSpot=selection.slot;
@@ -1735,9 +1733,6 @@ function openEditor(){
 }
 $('publish').onclick=async()=>{
   if(publishingArt||room==='depot'||!editingSpotId)return;
-  if(museumStore.enabled&&!museumStore.signedIn){
-    show('account');toast('Google sign-in is required to save.');return;
-  }
   const chosen=findVacantSlot(editingSpotId,slots,artworks);
   if(!chosen.ok){toast(chosen.reason);return}
   const exhibitSlot=chosen.slot;
@@ -1795,15 +1790,14 @@ $('publish').onclick=async()=>{
   $('publish').disabled=true;
   let syncMessage='';
   if(museumStore.enabled){
-    // Server-first publishing: never claim success or close the editor until
-    // the authenticated insert returns. No silent browser-local fallback.
+    // Publish immediately and anonymously. The server checks slot capacity,
+    // title/description requirements, and returns the definitive timestamp.
     try{
       const saved=await museumStore.submit(a);
       a.status=saved.status;
-      a.ownerId=saved.ownerId;
       a.createdAt=saved.createdAt;
       artworks.push(a);
-      syncMessage='Saved to your Google account. Awaiting review before public display.';
+      syncMessage='Published to the shared MAD museum. Everyone can see it.';
     }catch(e){
       console.error('Artwork cloud upload failed',e);
       publishingArt=false;updatePublishState();
@@ -1822,7 +1816,7 @@ $('publish').onclick=async()=>{
   // After rebuilding, stand in front of the exact spot just filled.
   hide('editor');
   objects=[];createRoom();
-  if(!museumStore.enabled)splitFlap?.showNewest(a);
+  splitFlap?.showNewest(a);
   const pose=viewFromSlot(exhibitSlot);
   camera.position.set(pose.x,pose.y,pose.z);
   yaw=pose.yaw;pitch=pose.pitch;
@@ -1839,10 +1833,10 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
   if(shaderFailed)throw new Error('Gallery shader failed to compile on this device.');
   document.getElementById('bootStatus').style.display='none';
   requestAnimationFrame(tick);if(museumStore.enabled){
-    museumStore.init().catch(e=>{
-      console.error('MAD cloud login failed',e);
+    museumStore.init().then(()=>syncPublicGallery()).catch(e=>{
+      console.error('MAD public gallery connection failed',e);
       museumStore.ready=true;museumStore.emit();
-      toast('Cloud login unavailable: '+e.message);
+      toast('Shared gallery unavailable: '+e.message);
     });
   }}catch(e){console.error('MAD initialization failed',e);showRenderError('Museum startup error: '+e.message);}
 </script></body></html>

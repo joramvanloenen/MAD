@@ -1571,6 +1571,7 @@ function updateEditorStages(){
   }
 }
 function selectEditorMode(nextMode){
+  const previousMode=mode;
   mode=nextMode;
   if(nextMode==='voxel'){
     if(MOBILE_SAFE)releaseEditorRenderer('sculpture');
@@ -1611,6 +1612,7 @@ function selectEditorMode(nextMode){
   $('sculptureOptions').classList.toggle('hidden',mode==='painting'||mode==='mixed');
   $('reliefControls').classList.toggle('hidden',!editingWall()||mode!=='sculpture');
   syncEditorToolMode(mode);
+  if(previousMode!==nextMode)setEditorPane('tools');
 }
 document.querySelectorAll('[data-mode]').forEach(b=>
   b.onclick=()=>selectEditorMode(b.dataset.mode));

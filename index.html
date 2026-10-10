@@ -32,6 +32,7 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { MuseumGI } from './gi.js';
 import { buildMuseumEnvironment } from './museum-environment.js';
+import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js';
 import { makeArtworkInspector } from './museum-inspection.js';
 import { MuseumAudio } from './museum-audio.js';
@@ -68,7 +69,7 @@ async function syncPublicGallery(){
   finally{$('syncBtn').disabled=false}
 }
 $('syncBtn').onclick=syncPublicGallery;
-const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0}];
+const slots=[{id:'w1',type:'wall',x:-10,z:-11.68,rot:0},{id:'w2',type:'wall',x:-3,z:-11.68,rot:0},{id:'w3',type:'wall',x:4,z:-11.68,rot:0},{id:'w4',type:'wall',x:11,z:-11.68,rot:0},{id:'w5',type:'wall',x:-10,z:11.68,rot:Math.PI},{id:'w6',type:'wall',x:-3,z:11.68,rot:Math.PI},{id:'w7',type:'wall',x:4,z:11.68,rot:Math.PI},{id:'w8',type:'wall',x:11,z:11.68,rot:Math.PI},{id:'p1',type:'plinth',x:-7,z:-3,rot:0},{id:'p2',type:'plinth',x:0,z:-3,rot:0},{id:'p3',type:'plinth',x:7,z:-3,rot:0},{id:'f1',type:'floor',x:-7,z:4,rot:0},{id:'f2',type:'floor',x:0,z:4,rot:0},{id:'f3',type:'floor',x:7,z:4,rot:0},...VITRINE_SPOTS];
 const colors=['#c5eb68','#f8f5eb','#ff685b','#4c8eea','#bb83ee','#f7b758','#45c6ba','#171a1e','#e2a0b8','#9b744a'];
 let keys={},moveTouch={x:0,y:0},lookTouchId=null,lookX=0,lookY=0,objects=[];
 function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3200)}
@@ -302,6 +303,9 @@ function mountAvailableMarker(g,s){
   }else if(s.type==='plinth'){
     // A small plaque flush with the plinth's visitor-facing side.
     sign.position.set(0,.47,1.166);
+  }else if(s.type==='vitrine'){
+    // Small sign on the front of the showcase's solid pedestal.
+    sign.position.set(0,.36,.662);
   }else{
     // Discreet tilted floor plaque on a low stand outside the perimeter rail.
     const x=-1.08,z=1.94;
@@ -340,6 +344,16 @@ function makeSpot(s){
     base=box(2.3,.9,2.3,0xe4e4dc,0,.45,0);
     g.add(base);
   }
+  let pickTarget=null;
+  if(s.type==='vitrine'){
+    const vitrine=createVitrine(g);
+    base=vitrine.base;
+    pickTarget=vitrine.target;
+    // Treat vitrines like other fixed gallery furniture for walking collision.
+    environment?.colliders?.push({
+      x:s.x,z:s.z,hx:vitrine.collider.hx,hz:vitrine.collider.hz
+    });
+  }
   if(s.type==='floor'){
     base=box(3.1,.06,3.1,0xd6d7d0,0,.025,0);
     g.add(base);
@@ -350,7 +364,7 @@ function makeSpot(s){
   }
   if(a)installArtwork(g,s,a);
   else mountAvailableMarker(g,s);
-  objects.push({mesh:base,kind:a?'art':'spot',spot:s,art:a});
+  objects.push({mesh:pickTarget||base,kind:a?'art':'spot',spot:s,art:a});
 }
 // Small physical museum labels, with the original artist and description.
 function plaqueTexture(a) {
@@ -418,6 +432,9 @@ function mountPlaque(g,s,a) {
   }else if(s.type==='plinth'){
     // Flush-mounted on the front vertical face of the actual pedestal.
     sign.position.set(0,.47,1.18);
+  }else if(s.type==='vitrine'){
+    // Under the glass on the solid base, as on real museum showcases.
+    sign.position.set(0,.36,.673);
   }else{
     // Floor works get a short inclined label stand OUTSIDE the low barrier.
     const stand=box(.055,.30,.055,0x454d49,-1.08,.18,1.94);
@@ -430,7 +447,11 @@ function mountPlaque(g,s,a) {
 }
 function installArtwork(g,s,a){
   const wall=s.type==='wall',mesh=artMesh(a,wall);
-  if(wall){
+  if(s.type==='vitrine'){
+    // Keep all art modes behind the glass. A fit-to-box transform prevents
+    // protruding through the cover, regardless of brush/voxel shape size.
+    fitArtToVitrine(mesh,a.scaleFactor||1);
+  }else if(wall){
     mesh.scale.setScalar((a.mode==='painting'?1:.8)*Math.min(1.02,a.scaleFactor||1));
     mesh.position.set(0,3,a.mode==='voxel'?.265:.23);
     // Relief geometry is entirely in front of the wall.
@@ -449,6 +470,7 @@ function makeDepotArt(a,i){
   const s={id:'depot'+i,type,x,z,rot:0};
   const g=new THREE.Group();g.position.set(x,0,z);artGroup.add(g);
   if(type==='wall')g.add(box(3.55,4.25,.2,0xaaaead,0,3,-.12));
+  else if(type==='vitrine')createVitrine(g,{archive:true});
   else if(type==='plinth')g.add(box(2.3,.9,2.3,0xbbbeb7,0,.45,0));
   else g.add(box(3.1,.08,3.1,0xaeb3ae,0,.04,0));
   installArtwork(g,s,a);
@@ -1196,16 +1218,22 @@ function openEditor(){
   if(!selection.ok){toast(selection.reason);editingSpotId=null;activeSpot=null;return}
   activeSpot=selection.slot;
   const wall=editingWall();
+  const isCase=activeSpot.type==='vitrine';
   $('spotLabel').textContent='Exhibit '+activeSpot.id.toUpperCase()+' · '
-    +(wall?'Wall':activeSpot.type==='plinth'?'Pedestal':'Floor')+' · 14-day exhibition';
+    +(wall?'Wall':isCase?'Glass display case':activeSpot.type==='plinth'?'Pedestal':'Floor')+
+    ' · 14-day exhibition';
   $('editorRule').textContent=wall
     ? 'WALL ZONE · Paint a flat artwork, or make a 3D relief attached to this wall. The wall is a solid boundary: no sculpting through it.'
-    : 'FREE-STANDING ZONE · Create a sculpture with full 3D freedom, or choose a painted artwork.';
+    : isCase
+      ? 'DISPLAY CASE · Create a sculpture or another small artwork. MAD automatically scales it to fit safely inside the transparent case.'
+      : 'FREE-STANDING ZONE · Create a sculpture with full 3D freedom, or choose a painted artwork.';
   document.querySelector('[data-mode="sculpture"]').textContent=wall?'WALL RELIEF':'3D SCULPTURE';
   document.querySelector('[data-mode="voxel"]').textContent=wall?'VOXEL RELIEF':'VOXEL SCULPT';
   $('sculptHelp').textContent=wall
     ? 'The wall is always visible. Drag to move the inspection camera around the relief. Geometry is constrained in front of the wall; depth never passes through it.'
-    : 'Drag to rotate your free-standing sculpture. Adjust its shape, distortion and color.';
+    : isCase
+      ? 'Create a miniature sculpture for the glass showcase. Its full geometry will be automatically fitted into the protective cover.'
+      : 'Drag to rotate your free-standing sculpture. Adjust its shape, distortion and color.';
   $('voxelHelp').textContent=wall
     ? 'Click the wall to add your first layer. Click exposed faces to build outward. The back wall is solid; placing voxels behind it is forbidden. Drag to inspect from the front and sides.'
     : 'Click a face to add a voxel, or remove voxels. Drag to orbit your sculpture.';

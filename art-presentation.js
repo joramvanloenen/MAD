@@ -2,7 +2,7 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import {constrainReliefGeometry,sanitizeWallVoxels} from './wall-art.js';
 import {clayObject} from './clay-sculpt.js';
-import {mixedArtwork} from './mixed-media.js?v=20261010-mixed5';
+import {mixedArtwork} from './mixed-media.js?v=20261010-mixed6';
 
 const box=(w,h,d,mat,x=0,y=0,z=0)=>{
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);

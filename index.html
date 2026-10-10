@@ -263,28 +263,60 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,
   FORCED_LOW_POWER?.9:MOBILE_SAFE?1.15:1.45));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;renderer.shadowMap.enabled=!MOBILE_SAFE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;$('world').replaceChildren(renderer.domElement);scene.add(new THREE.HemisphereLight(0xeef1ed,0xb9a995,.63));const sun=new THREE.DirectionalLight(0xffffff,.48);sun.position.set(4,14,4);scene.add(sun);const floor=box(39,.3,24,room==='cellar'?0x2a2929:
   room==='depot'?0xd2d7d3:0xe2e1dc,0,-.17,0);scene.add(floor);
 const mat=room==='cellar'?0x303336:room==='depot'?0xd7dcd8:0xf2f1ea;
-// The east wall is physically divided around the archive door.
-for(const [w,d,x,z] of [[39,.45,0,-12],[39,.45,0,12],[.45,24,-19.5,0],
-  [.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]]){
-  scene.add(box(w,8,d,mat,x,4,z));
+// Perimeter architecture has real openings where passageways attach.
+if(room==='gallery'){
+  // New wing doorway in the north wall at X=14.25 .. 17.65.
+  for(const [w,x] of [[33.75,-2.625],[1.85,18.575]])
+    scene.add(box(w,8,.45,mat,x,4,-12));
+  scene.add(box(3.4,4.55,.45,mat,15.95,5.725,-12));
+  // Secret west entrance: passage at Z=3.1..5.75, full floor clearance.
+  for(const [len,z] of [[15.1,-4.45],[6.25,8.875]])
+    scene.add(box(.45,8,len,mat,-19.5,4,z));
+  scene.add(box(.45,5.28,2.65,mat,-19.5,5.36,4.425));
+}else{
+  scene.add(box(39,8,.45,mat,0,4,-12));
+  scene.add(box(.45,8,24,mat,-19.5,4,0));
 }
-// Solid lintel above the 3.45m tall opening.
-scene.add(box(.45,8-3.45,3.2,mat,19.5,(8+3.45)/2,0));
-scene.add(box(39,.3,24,0xd0d0c9,0,8,0));
+scene.add(box(39,8,.45,mat,0,4,12));
+if(room!=='cellar'){
+  // Full-size east doorway, no blocking wall behind the actual door.
+  for(const [w,d,x,z] of [[.45,10.4,19.5,-6.8],[.45,10.4,19.5,6.8]])
+    scene.add(box(w,8,d,mat,x,4,z));
+  scene.add(box(.45,4.55,3.2,mat,19.5,5.725,0));
+}else{
+  scene.add(box(.45,8,24,mat,19.5,4,0));
+}
+scene.add(box(39,.3,24,room==='cellar'?0x222527:0xd0d0c9,0,8,0));
 environment=buildMuseumEnvironment(scene,room,{quality:MOBILE_SAFE?'eco':'high'});
-const gate=createModernDepotDoor();
-objects.push({mesh:gate,kind:'portal'});
-// A real, eye-height mechanical noticeboard on the wall beside the Depot.
-try{
-  splitFlap=new SplitFlapBoard(scene,artworks);
-  objects.push({mesh:splitFlap.hitMesh,kind:'flap'});
-}catch(error){
-  console.warn('MAD split-flap display could not load',error);
-  splitFlap=null;
+if(room!=='cellar'){
+  createModernDepotDoor();
+  objects.push(buildWhiteTransition(scene));
+}
+if(room==='gallery'){
+  objects.push(buildNorthWingPassage(scene));
+  objects.push(buildSecretEntrance(scene));
+}else if(room==='wing'){
+  environment.colliders.push(...buildNewWing(scene));
+  objects.push(buildStairToUpper(scene));
+}else if(room==='upper'){
+  const upper=buildUpperGallery(scene);
+  environment.colliders.push(...upper.barriers);
+  objects.push(upper.portal);
+}else if(room==='cellar'){
+  objects.push(buildCellar(scene));
+}
+if(room==='gallery'||room==='depot'){
+  try{
+    splitFlap=new SplitFlapBoard(scene,artworks);
+    objects.push({mesh:splitFlap.hitMesh,kind:'flap'});
+  }catch(error){
+    console.warn('MAD split-flap display could not load',error);
+    splitFlap=null;
+  }
 }
 artGroup=new THREE.Group();scene.add(artGroup);
-if(room==='gallery'){
-  for(const s of slots)makeSpot(s);
+if(room!=='depot'){
+  for(const s of slots)if((s.zone||'gallery')===room)makeSpot(s);
 }else{
   const archived=artworks.filter(a=>expired(a));
   depotArchive=buildDepotArchive(scene,archived,artMesh,slots);
@@ -300,7 +332,7 @@ camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
     // The six sampler3D GI uniforms plus large gallery light arrays can
     // exceed mobile fragment limits. Mobile uses cheap hemispherical bounce
     // illumination instead; do not compile the probe shaders on mobile.
-    if(!MOBILE_SAFE && renderer.capabilities.isWebGL2){
+    if(!MOBILE_SAFE && renderer.capabilities.isWebGL2 && (room==='gallery'||room==='depot')){
       gi=new MuseumGI({renderer,room,slots,artworks});
       gi.decorateScene(scene);
     }
@@ -309,7 +341,7 @@ camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
     gi?.dispose();gi=null;
   }
   refreshGiUI();$('galleryBtn').classList.toggle('active',room==='gallery');$('depotBtn').classList.toggle('active',room==='depot');$('status').innerHTML=room==='gallery'?'EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE':'THE DEPOT<br>PERMANENT COLLECTION';}
-function expired(a){return Date.now()-a.createdAt>=14*86400000}
+function expired(a){return a.audience==='after-hours'?false:Date.now()-a.createdAt>=14*86400000}
 function spotArt(id){return artworks.find(a=>a.spotId===id&&!expired(a))}
 // Quiet, gallery-style availability markers: small and physically mounted.
 // Never place a large floating sign in the middle of an exhibition space.

@@ -59,9 +59,11 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
   const timber=std(0xa97851,.73);
   const white=std(0xe6e4de,.85);
   const brushed=std(0x929895,.3,.66);
-  const floorMat=new THREE.MeshStandardMaterial({
-    map:woodTexture(isDepot),roughness:isDepot?.83:.66,metalness:0
-  });
+  const floorMat=isDepot
+    // Real archive depots use smooth, light resin/concrete floors; the
+    // galvanized sliding floor rails remain visible on top.
+    ? new THREE.MeshStandardMaterial({color:0xd9dcd8,roughness:.48,metalness:.02})
+    : new THREE.MeshStandardMaterial({map:woodTexture(false),roughness:.66,metalness:0});
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(38.85,23.7),floorMat);
   floor.rotation.x=-Math.PI/2;floor.position.y=.004;floor.receiveShadow=true;
   scene.add(floor);
@@ -102,6 +104,13 @@ export function buildMuseumEnvironment(scene,room,{quality='high'}={}){
       label.position.set(x,6.1,-11.64);scene.add(label);
     }
   }else{
+    // The archive has long flush LED luminaires instead of dramatic
+    // spotlight-only lighting, matching real conservation storage rooms.
+    const led=new THREE.MeshBasicMaterial({color:0xf4f7f1,toneMapped:false});
+    for(const x of [-15,-9,-3,3,9,15]){
+      scene.add(mk(.16,.075,19.4,trim,x,7.78,0));
+      scene.add(mk(.10,.024,19.2,led,x,7.73,0));
+    }
     // Archive sliding mesh racks are assembled by museum-depot.js, which also
     // mounts the real archived paintings and provides their interactive rails.
     const depotPanel=titlePanel('THE DEPOT   /   ARCHIVE',4.3);

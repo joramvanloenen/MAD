@@ -437,6 +437,8 @@ export class MixedMediaStudio {
     const buckets=new Map();
     this.group.updateMatrixWorld(true);
     const normalMatrix=new THREE.Matrix3(),pos=new THREE.Vector3(),normal=new THREE.Vector3();
+    const stageInverse=this.group.matrixWorld.clone().invert();
+    const localMatrix=new THREE.Matrix4();
     for(const part of this.parts){
       part.root.updateMatrixWorld(true);
       const meshes=[];
@@ -451,7 +453,9 @@ export class MixedMediaStudio {
         const kind=mesh.userData.medium||part.kind;
         if(!buckets.has(kind))buckets.set(kind,[]);
         const dest=buckets.get(kind);
-        normalMatrix.getNormalMatrix(mesh.matrixWorld);
+        // Bake in artwork-local coordinates, not scaled preview coordinates.
+        localMatrix.multiplyMatrices(stageInverse,mesh.matrixWorld);
+        normalMatrix.getNormalMatrix(localMatrix);
         const attr=geometry.attributes.position,nAttr=geometry.attributes.normal;
         const idx=geometry.index;
         const rgb=COLOR(mesh.userData.medium==='paint'?
@@ -461,7 +465,7 @@ export class MixedMediaStudio {
         const count=idx?idx.count:attr.count;
         for(let i=0;i<count;i++){
           const v=idx?idx.getX(i):i;
-          pos.fromBufferAttribute(attr,v).applyMatrix4(mesh.matrixWorld);
+          pos.fromBufferAttribute(attr,v).applyMatrix4(localMatrix);
           normal.fromBufferAttribute(nAttr,v).applyMatrix3(normalMatrix).normalize();
           const grain=(kind==='wood'||kind==='beam'||kind==='laminate')?
             .78+.16*Math.sin(pos.y*21+Math.sin(pos.x*8)*.8):1;

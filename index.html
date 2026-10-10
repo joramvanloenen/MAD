@@ -31,17 +31,17 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { MuseumGI } from './gi.js';
-import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-archive2';
-import { buildDepotArchive } from './museum-depot.js?v=20261010-archive2';
+import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-expansion3';
+import { buildDepotArchive } from './museum-depot.js?v=20261010-expansion3';
 import { buildWhiteTransition, buildNorthWingPassage, buildNewWing,
   buildStairToUpper, buildSecretEntrance, buildCellar, buildUpperGallery }
-  from './museum-expansion.js';
+  from './museum-expansion.js?v=20261010-expansion3';
 import { VITRINE_SPOTS, createVitrine, fitArtToVitrine } from './museum-vitrines.js';
 import { artMesh, geometryFor, sculptureMaterial, paintingDimensions } from './art-presentation.js';
 import { makeArtworkInspector } from './museum-inspection.js';
 import { MuseumAudio } from './museum-audio.js';
-import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js';
-import {findVacantSlot, viewFromSlot} from './museum-placement.js';
+import { SplitFlapBoard, DEFAULT_FLAP_MESSAGES, loadFlapMessages, saveFlapMessages, parseFlapMessages, splitFlapLines } from './split-flap.js?v=20261010-expansion3';
+import {findVacantSlot, viewFromSlot} from './museum-placement.js?v=20261010-expansion3';
 import { ClayField } from './clay-sculpt.js';
 import { MuseumStore } from './museum-store.js';
 import { constrainReliefGeometry, wallVoxelAllowed, sanitizeWallVoxels } from './wall-art.js';

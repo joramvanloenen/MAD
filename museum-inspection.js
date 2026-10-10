@@ -1,6 +1,7 @@
 // Orbitable close-up artwork viewer for MAD.
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import {artMesh} from './art-presentation.js';
+import {createVitrine,fitArtToVitrine} from './museum-vitrines.js';
 
 export function makeArtworkInspector(holder){
   const scene=new THREE.Scene();
@@ -44,9 +45,14 @@ export function makeArtworkInspector(holder){
   }
   function open(art,mounting='plinth'){
     clear();
-    const wall=mounting==='wall';
+    const wall=mounting==='wall',inVitrine=mounting==='vitrine';
     const artwork=artMesh(art,wall);
-    if(wall){
+    stage.position.y=0;
+    if(inVitrine){
+      createVitrine(stage);
+      fitArtToVitrine(artwork,art.scaleFactor||1);
+      stage.position.y=-.96; // put the miniature inside the visible glass case
+    }else if(wall){
       const wallMesh=new THREE.Mesh(
         new THREE.BoxGeometry(5,5,.3),
         new THREE.MeshStandardMaterial({color:0xf4f2eb,roughness:.95})
@@ -63,7 +69,7 @@ export function makeArtworkInspector(holder){
       artwork.position.y=-.26;
     }
     stage.add(artwork);
-    yaw=0;pitch=.1;radius=wall?6.1:5.0;
+    yaw=0;pitch=.1;radius=wall?6.1:inVitrine?3.7:5.0;
     setCamera();
     active=true;
   }

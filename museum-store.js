@@ -93,6 +93,14 @@ export class MuseumStore {
   if(error)throw error;
   return data||[];
  }
+ async published(){
+  if(!this.isAdmin)throw Error('Verified MAD administrator required.');
+  const {data,error}=await this.client.from('mad_artworks')
+    .select('id,spot_id,payload,created_at,owner_id,status')
+    .eq('status','approved').order('created_at',{ascending:false}).limit(200);
+  if(error)throw error;
+  return data||[];
+ }
  async moderate(id,status){
   if(!this.isAdmin)throw Error('Administrator access required.');
   if(!['approved','rejected'].includes(status))throw Error('Invalid review decision.');

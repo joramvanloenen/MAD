@@ -230,7 +230,6 @@ const gate=createModernDepotDoor();
 objects.push({mesh:gate,kind:'portal'});
 artGroup=new THREE.Group();scene.add(artGroup);
 if(room==='gallery'){for(let s of slots)makeSpot(s)}else{artworks.filter(a=>expired(a)).forEach((a,i)=>makeDepotArt(a,i));}
-const wallText=labelSprite(room==='gallery'?'THE GALLERY — NOW SHOWING':'THE DEPOT — COLLECTION',4);wallText.position.set(0,5,-11.73);scene.add(wallText);
 camera.position.set(0,1.7,8);yaw=0;pitch=0;camera.rotation.set(0,0,0);
   try{
     // The six sampler3D GI uniforms plus large gallery light arrays can

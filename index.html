@@ -16,6 +16,11 @@
 #flapMessages{min-height:230px;line-height:1.6;font-size:15px;letter-spacing:.015em}
 #flapEditor .toolrow .btn{min-height:44px}
 @media(max-width:720px){#flapEditor .modal{max-height:93vh}#flapPreview{font-size:15px;letter-spacing:.08em}}
+#mixedPanel{padding:4px 0 12px}#mixedPanel .toolrow input[type=range]{flex:1;min-width:0;padding:0;accent-color:#d6fd68}#mixedPanel .toolrow select{flex:1;min-width:90px}
+#mixedPanel .toolrow button{font-size:11px;padding:10px 11px}
+#mixedPanel .toolrow button:disabled{opacity:.36;cursor:not-allowed}
+#mixedPanel input[type=color]{padding:4px;background:#272d2c}
+@media(max-width:720px){#editor .tabrow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#editor .tab{white-space:nowrap;flex:0 0 auto;font-size:11px;padding:11px 12px}#mixedPanel .toolrow button{flex:1}}
 </style></head><body>
 <div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight"><button class="pill" id="mobileMenuBtn" style="display:none">MENU</button><button class="pill active" id="galleryBtn">GALLERY</button><button class="pill" id="depotBtn">DEPOT</button><button class="pill" id="giBtn" title="Cycle realtime global illumination quality">GI: HIGH</button><button class="pill" id="soundBtn" title="Toggle museum audio">SOUND: ON</button><button class="pill" id="catalogBtn">COLLECTION</button><button class="pill" id="flapBtn" title="Edit the gallery split-flap display">DISPLAY</button><span class="pill" id="cloudStatus">LOCAL ONLY</span><button class="pill hidden" id="syncBtn" title="Refresh public collection">SYNC</button><button class="pill" id="aboutBtn">ABOUT</button></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> global illumination<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">GLOBAL ILLUMINATION · LIVE</span></div></div>
 <div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">This first release is a playable prototype. Art is currently saved in this browser only; public cross-device publishing requires connecting a shared backend.</div><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
@@ -25,7 +30,7 @@
   <p class="stat">Combine cut wood, ceramic, metal, found forms and draped fabric. Tap a piece to select it; drag to move, rotate or paint.</p>
   <label>Add a material</label>
   <div class="toolrow" id="mixedAddRow" style="flex-wrap:wrap">
-    <button data-mixed-add="wood">WOOD PANEL</button><button data-mixed-add="beam">WOOD BEAM</button>
+    <button data-mixed-add="wood">WOOD PANEL</button><button data-mixed-add="beam">WOOD BEAM</button><button data-mixed-add="laminate">LAYERED WOOD</button>
     <button data-mixed-add="ceramic">CERAMIC</button><button data-mixed-add="metal">METAL</button>
     <button data-mixed-add="found">FOUND OBJECT</button><button data-mixed-add="coil">CURVED ROD</button>
     <button data-mixed-add="fabric">CLOTH</button>

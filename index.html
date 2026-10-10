@@ -204,7 +204,9 @@ function createRoom(){
   if(depotArchive){depotArchive.dispose();depotArchive=null}
   if(splitFlap){splitFlap.dispose();splitFlap=null}
   if(scene)scene.traverse(o=>{
-    if(!o.isMesh)return;
+    // Sliding-rack grids are LineSegments, not Meshes. Dispose both to avoid
+    // GPU memory leaks each time visitors switch between gallery and Depot.
+    if(!o.isMesh&&!o.isLineSegments&&!o.isLine)return;
     o.geometry?.dispose();
     const materials=Array.isArray(o.material)?o.material:[o.material];
     for(const m of materials){m?.map?.dispose();m?.dispose()}

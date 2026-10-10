@@ -8,22 +8,40 @@ Serve the project over HTTP or use GitHub Pages. Opening index.html directly wit
 
 The museum includes connected gallery spaces, procedural oak flooring, exhibition spotlights, shadows, display furniture, artworks on walls, pedestals and floor, static baked GI, inspection mode and gallery audio. The editor offers painting, formatted canvases/frames, procedural 3D sculptures with PBR surfaces, voxel reliefs, and smooth SDF clay sculpting with editable pigment and three LOD levels.
 
-## Optional shared gallery: Supabase
+## Google sign-in, shared artworks and secure MAD administration
 
-**Unconfigured by default.** Until connected, artworks exist only in the current browser's localStorage, not a public collection.
+**Implemented in the site, but waiting for your Supabase project.** The public GitHub repository does not contain project credentials. Until configured, the website honestly remains in a **LOCAL ONLY** demonstration mode; it cannot authenticate visitors or store their work on a server.
 
-1. Create your own Supabase project.
-2. Run `supabase/schema.sql` in the Supabase SQL Editor.
-3. Put the Supabase **Project URL** and **publishable / anon key** in `mad-config.js`. Never put a service-role or secret key in static client code.
-4. Commit to main and wait for Pages deployment.
-5. Visitors' artworks are submitted as **pending** for safety. Use the Supabase Table Editor to review and approve or reject submissions; approved artwork is publicly visible.
-6. Before a broad public launch, configure rate limiting, CAPTCHA, quotas, ownership/authentication and media-storage policies. The included RLS prevents public visitors from approving and editing rows, but guest submissions can still be spammed.
+### Activate cloud accounts and persistence
 
-The client currently stores painting images and sculpt fields inside artwork JSON. Migrate larger media to Supabase Storage with upload restrictions as usage grows.
+1. Create a free project at [Supabase](https://supabase.com/dashboard) and open its **SQL Editor**. Execute `supabase/schema.sql` (also safe to rerun after upgrading from the former anonymous schema). This installs the artworks table, owner IDs, review queue, access policies, and a verified Google admin check.
+2. Go to **Google Cloud Console → Google Auth Platform → Clients**. Configure the OAuth consent screen and create an **OAuth client for a Web application**. Add the authorized JavaScript origin `https://joramvanloenen.github.io`.
+3. In the Google OAuth client, set the **Authorized redirect URI** to your exact Supabase Google-provider callback displayed in **Supabase → Authentication → Providers → Google** (typically `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`). This is the **Supabase callback**, not the GitHub Pages URL. Copy the Google **Client ID** and **Client Secret** into the Supabase Google-provider configuration, never into MAD's repository. If the Google app is in testing mode, add your Google account as an authorized test user.
+4. In **Supabase → Authentication → URL Configuration**, set **Site URL** to `https://joramvanloenen.github.io/MAD/` and add the same exact address to **Redirect URLs**. Add a localhost URL separately only for development.
+5. In **Supabase → Project Settings → API Keys**, copy the **Project URL** and the **publishable key / legacy anon key**. Edit `mad-config.js` in the GitHub repository to set `CLOUD.url` and `CLOUD.anonKey`. Both are public browser configuration values: access protection comes from RLS, **not** from keeping these values secret. Never commit the Supabase service-role key, a Google OAuth secret, or other private credentials.
+6. Deploy the `main` branch on GitHub Pages, open the MAD website, and click **SIGN IN → Continue with Google**. You can use your Google account in multiple browsers or on mobile. After returning to MAD, the **CLOUD · SAVED** status confirms sign-in.
+
+### Verified administrator
+
+The SQL function `public.mad_is_admin()` grants admin capabilities **only** when Supabase Auth verifies both a signed-in Google identity and the exact confirmed address `joramvanloenen@gmail.com`. This is evaluated on the server against `auth.users` and `auth.identities`. Other users cannot gain this role by typing the email address into the editor, modifying Javascript, or changing the artwork payload. After successful Google sign-in with that account, the **ADMIN** button becomes visible.
+
+The admin panel has a pending-submissions queue with painting previews and descriptions. **APPROVE** publishes work to the shared museum, **REJECT** keeps it out, and **MANAGE PUBLISHED ART** permits removal. Row-level security denies those operations to other visitors. The database also prevents two active artworks from being approved for the same exhibition spot.
+
+### How artworks are saved
+
+When connected, visitors must sign in before creating or publishing. New work—including 2D images, voxel colours, mixed-media mesh data, and clay fields—is inserted as a server-side database record owned by their Supabase Auth user ID. New submissions default to `pending` and remain visible only to their author and the administrator until approval. Approved artworks become visible to all visitors and can be viewed again after login on any device. The 14-day move to the Depot remains based on the saved server creation date, while After Hours works stay in the cellar.
+
+Cloud saves are **server-first**: a failed upload leaves the editor open and clearly reports the failure rather than incorrectly claiming the artwork has been published. Old works from the browser-only version are not silently added to the public collection. After signing in, use **UPLOAD MY OLDER LOCAL ARTWORKS** on the account screen to submit copies for review; local originals are preserved.
+
+If Supabase has not been connected yet, the editor continues to operate as a clearly labeled local-only prototype. The old browser `localStorage` is not a replacement for a shared database.
+
+### Production considerations
+
+The database stores serialized artwork JSON, limited to 3 MB per submission. Very large painting and mesh payloads will require Supabase Storage (separate file objects), quotas, thumbnail moderation and a more scalable upload pipeline. Before public launch, consider CAPTCHA/rate limiting, automated content safeguards, access-policy reviews, backups, and legal disclosures. Google's OAuth consent screen and Supabase Auth provider settings cannot be created using the static site's publishable key alone.
 
 ## Controls
 
-WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI quality. Smooth Clay: paint/build/carve/smooth/flatten with left mouse; right drag or Alt-drag to orbit. Paint: brush, watercolor, charcoal, spray, smudge, mirror, procedural patterns, undo/redo.
+WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: baked lighting toggle. Smooth Clay: paint/build/carve/smooth/flatten with left mouse; right drag or Alt-drag to orbit. Paint: brush, watercolor, charcoal, spray, smudge, mirror, procedural patterns, undo/redo.
 
 ## Project layout
 
@@ -43,11 +61,11 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: GI q
 - `split-flap.js`: animated black 16-column × 3-row mechanical arrival board beside the Depot door, with white flap lettering, green indicator tiles, alternating recent artist/title notices and cryptic messages. Interact using E near the board or use the DISPLAY menu button. Edit messages as multiline blocks separated by a blank line; Save persists only in the current browser's localStorage, not globally across visitors.
 - `museum-audio.js`: five locally hosted, recorded footsteps on wood, matched to distance walked (roughly 0.6 seconds between contacts at normal walking speed), gentle per-step pitch variation and short room reflections.
 - `museum-placement.js`: immutable gallery spot IDs, occupancy verification, and camera return to the exact newly filled spot.
-- `museum-store.js` and `mad-config.js`: optional shared Supabase data store.
+- `museum-store.js`, `museum-account-ui.js`, `supabase/schema.sql` and `mad-config.js`: Google sign-in, secure shared storage, admin review and setup.
 
 ## Known limitations
 
-This remains a prototype. Cloud credentials are not configured. Placement reservations are not transactional across visitors, clay mesh regeneration is CPU based, and the site still needs live multi-device QA, moderation workflows, mobile performance profiling, and additional accessibility work.
+This remains a prototype. Cloud project configuration is not yet supplied, so Google sign-in and server persistence cannot run on the deployed site until activation. SQL protects simultaneous **approval** of artworks for the same active slot, but pending submissions may still compete; larger media require object storage, and live cross-device QA, moderation tooling, performance profiling and accessibility work remain important.
 
 ## Footstep recording license
 

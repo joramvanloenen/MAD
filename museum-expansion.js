@@ -131,63 +131,102 @@ export function buildSecretEntrance(scene){
   return {mesh:trigger(scene,.15,2.45,2.2,-19.08,1.33,4.42),
     kind:'secret',to:'cellar',panel};
 }
-function cellarPainting(scene,x,y,z,seed){
-  const c=document.createElement('canvas');c.width=240;c.height=320;
-  const ctx=c.getContext('2d');
-  ctx.fillStyle='#16171b';ctx.fillRect(0,0,240,320);
-  let v=(seed*16807+13)>>>0;
-  const rnd=()=>{v=(v*1664525+1013904223)>>>0;return v/4294967296};
-  // Abstract ghostly marks, NOT supposedly real community artwork.
-  for(let i=0;i<44;i++){
-    const t=rnd();
-    ctx.strokeStyle=t>.50?'rgba(150,65,68,.18)':'rgba(196,178,154,.10)';
-    ctx.lineWidth=1+rnd()*13;
-    ctx.beginPath();ctx.moveTo(rnd()*240,rnd()*320);
-    ctx.bezierCurveTo(rnd()*240,rnd()*320,rnd()*240,rnd()*320,
-      rnd()*240,rnd()*320);ctx.stroke();
-  }
-  ctx.fillStyle='rgba(202,206,190,.09)';
-  ctx.beginPath();ctx.ellipse(125,135,40,78,rnd(),0,Math.PI*2);ctx.fill();
-  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
-  brick(scene,1.30,1.75,.09,black,x,y,z);
-  const art=new THREE.Mesh(new THREE.PlaneGeometry(1.24,1.69),
-    new THREE.MeshBasicMaterial({map:tex}));
-  art.position.set(x,y,z+.07);scene.add(art);
-}
+// The cellar is deliberately empty at first. Its paintings and sculptures
+// must come from visitor submissions through the existing C-series spots.
+// Layout: a west entrance stair, uninterrupted central nave, wall exhibition
+// bays, low architectural vault and compact conservation-style lighting.
 export function buildCellar(scene,{eco=false}={}){
-  // Cellar is a separate subterranean gallery scene with vaulted low ceiling,
-  // stone walls, warm conservation lamps and mysterious abstract study works.
-  const info=material(0x7e766c,.8);
-  for(const z of [-11.72,11.72])brick(scene,38,.35,.2,cellarStone,0,3.45,z);
-  brick(scene,38,.42,23.5,cellarStone,0,3.9,0);
-  for(const [xi,x] of [-14,-7,0,7,14].entries()){
-    brick(scene,.4,3.7,.52,cellarStone,x,1.8,-11.45);
-    brick(scene,.4,3.7,.52,cellarStone,x,1.8,11.45);
-    for(const [zi,z] of [-8,0,8].entries()){
-      brick(scene,.45,.10,.35,gold,x,3.04,z);
-      if(eco&&(xi%2!==0||zi===1))continue;
-      const l=new THREE.PointLight(0xffbe77,eco?10:8,6,2);
-      l.position.set(x,2.9,z);scene.add(l);
+  const vault=material(0x343433,.91);
+  const dressedStone=material(0x454542,.88);
+  const ribs=material(0x53534d,.68,.10);
+  const brass=material(0x96805d,.47,.43);
+  const recess=material(0x171b1c,.96);
+  const lightFace=new THREE.MeshBasicMaterial({
+    color:0xffd8a0,toneMapped:false
+  });
+
+  // One clean low ceiling. Nothing hangs at exhibition-picture height.
+  // Its lower face is Y=3.68; C-series wall artworks end around Y=3.22.
+  brick(scene,38.6,.30,23.5,vault,0,3.83,0);
+
+  // Three transverse structural ribs give a sequence of exhibition bays.
+  // Integrated in the ceiling: they never divide the floor or obscure art.
+  for(const x of [-8.8,0.1,9]){
+    brick(scene,.22,.14,23.10,ribs,x,3.57,0);
+    // Recessed pilasters remain flush with the north/south walls.
+    for(const z of [-11.81,11.81]){
+      brick(scene,.24,3.42,.085,dressedStone,x,1.71,z);
     }
   }
-  for(const [x,z,seed] of [[-9,-11.5,5],[-1,-11.5,22],[8,-11.5,13],
-     [16,-11.5,37]]){
-    cellarPainting(scene,x,1.75,z+.16,seed);
+
+  // A subtle tiled concrete floor with joints; not display pedestals.
+  // The museum environment already owns the actual walkable floor plane.
+  const joints=[];
+  for(let x=-17.5;x<=17.5;x+=4.4)
+    joints.push(x,.013,-11.38,x,.013,11.38);
+  for(let z=-9.5;z<=9.5;z+=4.75)
+    joints.push(-18.9,.013,z,18.9,.013,z);
+  const floorLines=new THREE.BufferGeometry();
+  floorLines.setAttribute('position',
+    new THREE.Float32BufferAttribute(joints,3));
+  scene.add(new THREE.LineSegments(floorLines,new THREE.LineBasicMaterial({
+    color:0x454a48,transparent:true,opacity:.37,depthWrite:false
+  })));
+
+  // Small paired downlights, aligned to the exhibit walls rather than to
+  // arbitrary empty floor positions. Four lights on mobile, six on desktop.
+  for(const [i,x] of [-13,-3.5,7.8].entries()){
+    for(const [j,z] of [-7.7,7.7].entries()){
+      brick(scene,.50,.035,.17,brass,x,3.61,z);
+      brick(scene,.41,.012,.105,lightFace,x,3.576,z);
+      if(eco&&i===1)continue;
+      const light=new THREE.PointLight(0xffd1a0,eco?12:11,8.2,2);
+      light.position.set(x,3.42,z);
+      scene.add(light);
+    }
   }
-  // Atmospheric curtain in a far alcove and irregular plinth forms.
-  brick(scene,5.2,3.2,.18,info,15.2,1.65,-11.35);
-  for(const [x,z] of [[-10,-2],[0,4],[12,-3]]){
-    brick(scene,1.1,.50,1.10,cellarStone,x,.25,z);
-    brick(scene,.4,1.1,.35,iron,x,.95,z);
+
+  // Entrance staircase. The LOWEST step starts inside the cellar at X=-15.1,
+  // and each successive step goes UP toward the original west-wall door.
+  // Previously the ascending direction was reversed.
+  const stairZ=4.42,stairWidth=2.38,step=.355,rise=.202,steps=12;
+  const stair=material(0x62615d,.82);
+  const treads=material(0x797771,.70);
+  for(let i=0;i<steps;i++){
+    const x=-15.14-i*step;
+    const height=(i+1)*rise;
+    brick(scene,step+.008,height,stairWidth,stair,x,height/2,stairZ);
+    brick(scene,step+.032,.035,stairWidth+.035,treads,x,height+.012,stairZ);
+    // Thin safety strips emphasize the correct tread orientation.
+    brick(scene,.025,.004,stairWidth-.12,brass,x+step*.39,height+.032,stairZ);
   }
-  // Return stair with ascending visible treads behind a marked exit.
-  for(let i=0;i<12;i++){
-    const x=-17+i*.42;
-    brick(scene,.43,(i+1)*.25,2.4,concrete,x,(i+1)*.125,4.4);
+  // Retaining walls contain the stair ONLY, not any exhibition wall slots.
+  // Their eastern opening is framed, so the way back upstairs is obvious.
+  for(const z of [3.06,5.78]){
+    brick(scene,4.55,2.83,.17,dressedStone,-17.25,1.415,z);
+    brick(scene,.18,2.85,.22,ribs,-14.98,1.425,z);
   }
-  wallTitle(scene,'AFTER HOURS',0,3.05,-11.62,0,'#c1b5a3');
-  return {mesh:trigger(scene,.40,2.6,2.3,-17.15,1.4,4.4),
-    kind:'zone',to:'gallery',via:'stairs-up'};
+  brick(scene,.25,.28,2.82,ribs,-14.98,2.88,stairZ);
+  // A small illuminated header, viewed as you approach the stair to leave.
+  const exitLight=new THREE.PointLight(0xffc997,eco?7:9,4.3,2);
+  exitLight.position.set(-15.05,2.58,stairZ);scene.add(exitLight);
+  brick(scene,.034,.08,1.02,lightFace,-14.92,2.68,stairZ);
+
+  // The room title is on a free, clearly visible stretch of the WEST wall,
+  // NOT the south/north art walls or underneath a central pier.
+  // A plane turned +90 degrees faces gallery visitors approaching from +X.
+  wallTitle(scene,'AFTER HOURS',-19.12,2.48,-1.55,
+    Math.PI/2,'#d6c6ae');
+  // A modest secondary directional plaque near the stair.
+  wallTitle(scene,'STAIRS  /  EXIT',-19.12,2.43,8.04,
+    Math.PI/2,'#b7a88e');
+
+  // Invisible raycast opening at the BOTTOM stair landing: visitors face
+  // west to climb out, then get the normal scene transition upstairs.
+  return {
+    mesh:trigger(scene,.18,2.42,2.23,-14.79,1.38,stairZ),
+    kind:'zone',to:'gallery',via:'stairs-up'
+  };
 }
 export function buildUpperGallery(scene){
   const barriers=[];

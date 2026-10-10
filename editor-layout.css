@@ -118,8 +118,16 @@
  #editor #spotLabel{font-size:9px;flex:1}
  #editor .editorHeader .close{width:35px;height:35px;flex-basis:35px}
  #editor .editorRule{display:none}
- #editor .editorModeTabs{padding:0 7px 5px;gap:3px;border-bottom-color:#ffffff16}
- #editor .editorModeTabs .tab{font-size:10px;padding:8px 9px;border-radius:5px}
+ #editor .editorModeTabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+   overflow:visible;padding:0 7px 5px;gap:3px;border-bottom-color:#ffffff16}
+ #editor .editorModeTabs .tab{font-size:0;min-width:0;width:100%;
+   padding:9px 2px;border-radius:5px;text-overflow:clip}
+ #editor .editorModeTabs .tab::after{font-size:10px;letter-spacing:0}
+ #editor .editorModeTabs [data-mode="painting"]::after{content:"Paint"}
+ #editor .editorModeTabs [data-mode="sculpture"]::after{content:"3D Form"}
+ #editor .editorModeTabs [data-mode="voxel"]::after{content:"Voxels"}
+ #editor .editorModeTabs [data-mode="clay"]::after{content:"Clay"}
+ #editor .editorModeTabs [data-mode="mixed"]::after{content:"Mixed"}
  #editor .editorGrid{grid-template-columns:1fr;grid-template-rows:minmax(110px,1fr)
    clamp(188px,32dvh,265px)}
  #editor .editorWorkspace{padding:6px 8px}
@@ -178,7 +186,8 @@
 }
 @media(max-width:390px){
  #editor .editorOverline{display:none}
- #editor .editorModeTabs .tab{font-size:9px;padding:7px 7px}
+ #editor .editorModeTabs .tab{font-size:0;padding:7px 1px}
+ #editor .editorModeTabs .tab::after{font-size:9px}
  #editor .editorFooter{gap:6px}
  #editor #publish{min-width:120px}
  #editor .editorQuickDetails{padding:6px}

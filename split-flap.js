@@ -63,9 +63,11 @@ export function buildFlapSequence(artworks,messages,now=Date.now()){
   );
   const notes=messages.length?messages:DEFAULT_FLAP_MESSAGES;
   const output=[];
+  // Keep genuine alternation even if only one new artwork exists: repeat
+  // recent-art announcements between cryptic messages rather than grouping.
   for(let i=0;i<Math.max(announcements.length,notes.length);i++){
-    if(notes[i])output.push(notes[i]);
-    if(announcements[i])output.push(announcements[i]);
+    if(notes.length)output.push(notes[i%notes.length]);
+    if(announcements.length)output.push(announcements[i%announcements.length]);
   }
   return output.length?output:DEFAULT_FLAP_MESSAGES.slice();
 }
@@ -121,7 +123,9 @@ export class SplitFlapBoard{
   }
   setMessages(messages){
     this.messages=messages.length?messages.slice():DEFAULT_FLAP_MESSAGES.slice();
-    this.refreshFeed();this.next(true);
+    this.refreshFeed();
+    this.sequenceIndex=-1; // first edited message is shown immediately
+    this.next(true);
   }
   showNewest(art){
     this.refreshFeed();

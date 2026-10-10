@@ -83,18 +83,32 @@ export function artMesh(a,isWall=false){
   if(a.mode==='clay')return clayObject(a,sculptureMaterial);
   const group=new THREE.Group();
   if(a.mode==='voxel'){
-    const cells=isWall?sanitizeWallVoxels(a.voxels):a.voxels||[];
-    const material=sculptureMaterial(a);
-    const count=Math.min(3000,cells.length);
+    const resolution=Number(a.voxelResolution)>=2?2:1;
+    const cells=isWall?sanitizeWallVoxels(a.voxels,resolution):a.voxels||[];
+    const cellSize=.22/resolution;
+    const count=Math.min(5500,cells.length);
     if(count){
-      const instanced=new THREE.InstancedMesh(new THREE.BoxGeometry(.22,.22,.22),material,count);
-      const tmp=new THREE.Object3D();
+      // Base white lets instanceColor retain each voxel's true hue.
+      // Older works with no individual colours inherit their artwork colour.
+      const material=sculptureMaterial({...a,color:'#ffffff'});
+      const instanced=new THREE.InstancedMesh(
+        new THREE.BoxGeometry(cellSize*.985,cellSize*.985,cellSize*.985),
+        material,count);
+      const matrix=new THREE.Object3D(),rgb=new THREE.Color();
+      const fallback=a.color||'#c5eb68';
       for(let i=0;i<count;i++){
-        const v=cells[i];tmp.position.set(v[0]*.22,v[1]*.22,v[2]*.22);
-        tmp.updateMatrix();instanced.setMatrixAt(i,tmp.matrix);
+        const cell=cells[i];
+        matrix.position.set(cell[0]*cellSize,cell[1]*cellSize,cell[2]*cellSize);
+        matrix.updateMatrix();
+        instanced.setMatrixAt(i,matrix.matrix);
+        rgb.set(typeof cell[3]==='string'&&/^#[0-9a-fA-F]{6}$/.test(cell[3])
+          ?cell[3]:fallback);
+        instanced.setColorAt(i,rgb);
       }
       instanced.instanceMatrix.needsUpdate=true;
+      instanced.instanceColor.needsUpdate=true;
       instanced.castShadow=true;
+      instanced.receiveShadow=true;
       group.add(instanced);
     }
   }else{

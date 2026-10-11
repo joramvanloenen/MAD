@@ -91,9 +91,11 @@
 window.addEventListener('error',function(e){if(document.getElementById('bootStatus')){const el=document.getElementById('bootStatus');el.innerHTML='<div><strong>MAD could not start</strong><p style="color:#fff;font-size:14px">The 3D engine failed to load. Check your connection and refresh the page.</p></div>';console.error('MAD startup:',e.message)}},true);
 window.addEventListener('unhandledrejection',function(e){const el=document.getElementById('bootStatus');if(el){el.textContent='MAD failed to initialize: '+String(e.reason?.message||e.reason);}});
 </script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { StaticMuseumLighting } from './static-lightmap.js?v=static1';
+import {addSleepingGuard} from './museum-guard.js?v=guard1';
 import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-light1';
 import { buildDepotArchive } from './museum-depot.js?v=20261010-expansion3';
 import { buildWhiteTransition, buildNorthWingPassage, buildWingArrivalCorridor, buildNewWing,
@@ -331,6 +333,7 @@ function createRoom(){
   if(environment){environment.dispose();environment=null}
   if(depotArchive){depotArchive.dispose();depotArchive=null}
   if(splitFlap){splitFlap.dispose();splitFlap=null}
+  if(scene){scene.userData.madDisposed=true;}
   if(scene)scene.traverse(o=>{
     // Sliding-rack grids are LineSegments, not Meshes. Dispose both to avoid
     // GPU memory leaks each time visitors switch between gallery and Depot.
@@ -414,6 +417,9 @@ if(room!=='cellar'){
 if(room==='gallery'){
   objects.push(buildNorthWingPassage(scene));
   objects.push(buildSecretEntrance(scene));
+  // A quiet corner, safely away from the artwork panels and hidden doorway.
+  environment.colliders.push({x:-16.70,z:-9.35,hx:.65,hz:.82});
+  void addSleepingGuard(scene,{eco:MOBILE_SAFE});
 }else if(room==='wing'){
   environment.colliders.push(...buildNewWing(scene));
   const arrival=buildWingArrivalCorridor(scene);

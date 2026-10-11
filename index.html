@@ -2,15 +2,8 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101214"><title>MAD — Museum of Art & Discovery</title>
 <style>
 :root{font-family:Inter,system-ui,sans-serif;color:#efeee9;background:#101214}*{box-sizing:border-box}body{margin:0;overflow:hidden}button,input,textarea,select{font:inherit}button{cursor:pointer}canvas{display:block}#world{position:fixed;inset:0}#hud{position:fixed;inset:0;pointer-events:none}#top{position:absolute;top:20px;left:22px;right:22px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.logo{font-weight:900;letter-spacing:-.09em;font-size:39px;line-height:1}.logo small{display:block;font-size:9px;letter-spacing:.18em;font-weight:600;margin-top:6px}.pill{background:#15191be8;border:1px solid #ffffff22;padding:11px 15px;border-radius:30px;color:#eee;backdrop-filter:blur(12px)}#topRight{display:flex;gap:8px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end}.pill.active{background:#d6fd68;color:#172014;font-weight:800}#crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;color:#edf5d5;opacity:.7}#bottom{position:absolute;bottom:24px;left:24px;display:flex;gap:8px;align-items:end}.help{font-size:12px;line-height:1.7;color:#cbd0ce;background:#141719c9;border:1px solid #ffffff1b;border-radius:14px;padding:12px 16px;backdrop-filter:blur(12px)}kbd{border:1px solid #aeb2ad55;border-radius:4px;padding:1px 5px;color:#fff}#prompt{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#d6fd68;color:#171c16;padding:13px 20px;border-radius:30px;font-weight:800;font-size:13px;display:none}#toast{position:absolute;top:95px;left:50%;transform:translateX(-50%);background:#202628eb;border:1px solid #ffffff25;padding:12px 20px;border-radius:14px;max-width:85vw;text-align:center;font-size:13px;display:none}.overlay{position:fixed;inset:0;background:#070a0bbd;backdrop-filter:blur(9px);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}.overlay.open{display:flex}.modal{position:relative;width:min(960px,100%);max-height:min(92vh,900px);overflow:auto;background:#1b2021;border:1px solid #ffffff24;border-radius:23px;padding:25px;box-shadow:0 24px 90px #0008}h1,h2,h3,p{margin-top:0}h1{font-size:clamp(27px,4vw,42px);letter-spacing:-.055em;margin-bottom:8px}p,.muted{color:#aab1af;font-size:13px;line-height:1.65}label{font-size:11px;color:#c6ccc8;text-transform:uppercase;letter-spacing:.12em;font-weight:750;display:block;margin:13px 0 6px}input,textarea,select{width:100%;background:#121617;color:#fff;border:1px solid #ffffff2e;border-radius:9px;padding:11px;outline:none}textarea{resize:vertical;min-height:68px}.btn{border:0;border-radius:10px;padding:12px 17px;font-weight:800;background:#d6fd68;color:#182015}.btn.secondary{background:#343c3d;color:#e9efec}.btn:disabled{opacity:.45;cursor:not-allowed}.close{position:absolute;right:17px;top:14px;background:#ffffff16;border:0;border-radius:50%;width:33px;height:33px;color:#fff;font-size:21px}.tabrow{display:flex;gap:7px;flex-wrap:wrap;margin:17px 0}.tab{border:1px solid #ffffff2b;border-radius:9px;background:#262c2d;color:#e5e9e5;padding:11px 16px;font-weight:750}.tab.active{background:#d6fd68;color:#19231a}.editorGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,270px);gap:22px}#artCanvas{width:100%;max-width:512px;aspect-ratio:1;background:white;border-radius:10px;touch-action:none;image-rendering:pixelated;cursor:crosshair}#sculptView{height:370px;border-radius:12px;overflow:hidden;background:#101415;position:relative;touch-action:none}#sculptView canvas{width:100%;height:100%;touch-action:none}.toolrow{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.toolrow button{border:1px solid #ffffff31;background:#31393a;color:#eee;border-radius:8px;padding:9px 12px}.toolrow button.selected{background:#d6fd68;color:#151b13}#swatches{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.swatch{width:29px;height:29px;border:2px solid #ffffff55;border-radius:7px}.swatch.selected{outline:2px solid #d6fd68;outline-offset:2px}.hidden{display:none!important}.stat{font-size:11px;color:#adb5af}.section{margin:12px 0 18px}.card{padding:13px;background:#262c2c;border-radius:12px;margin:8px 0}.card strong{display:block;margin-bottom:4px}.card span{font-size:11px;color:#aebbb7}.link{color:#d6fd68}.notice{background:#312b1a;border:1px solid #7a6235;color:#e6d3a7;padding:12px;border-radius:10px;margin:14px 0;font-size:12px;line-height:1.6}#joystick{position:absolute;left:25px;bottom:32px;width:115px;height:115px;border:1px solid #ffffff55;background:#10171855;border-radius:50%;display:none;pointer-events:auto;touch-action:none}#stick{position:absolute;left:40px;top:40px;width:35px;height:35px;background:#d6fd68b8;border-radius:50%}#mobileInteract{position:absolute;right:23px;bottom:42px;display:none;pointer-events:auto}#mobileInteract button{border:0;border-radius:50%;background:#d6fd68;color:#182018;width:67px;height:67px;font-weight:900}#start .modal{max-width:520px}.startBrand{font-size:86px;font-weight:900;letter-spacing:-.11em;margin-bottom:0;line-height:1.1}#infoText{white-space:pre-wrap}#status{position:absolute;right:22px;bottom:24px;font-size:11px;color:#c4ccc6;text-align:right}.range{accent-color:#d6fd68}
-@media(max-width:720px){#top{top:12px;left:13px;right:13px}.logo{font-size:30px}.pill{padding:9px 11px;font-size:11px}#bottom{display:none}#prompt{bottom:146px;font-size:11px;max-width:90vw;white-space:normal;text-align:center}#joystick,#mobileInteract{display:block}#status{bottom:10px;right:12px}.editorGrid{grid-template-columns:1fr}#sculptView{height:290px}.modal{padding:18px}#topRight{max-width:76%;gap:5px}#crosshair{font-size:18px}
-#topRight .pill{font-size:10px;padding:7px 9px}
-#topRight:not(.expanded) #giBtn,#topRight:not(.expanded) #soundBtn,
-#topRight:not(.expanded) #cloudStatus,#topRight:not(.expanded) #aboutBtn,
-#topRight:not(.expanded) #syncBtn,#topRight:not(.expanded) #flapBtn,#topRight:not(.expanded) #adminBtn,#topRight:not(.expanded) #accountBtn{display:none!important}
-#topRight.expanded{position:absolute;right:0;top:45px;max-width:250px;width:250px;padding:12px;border-radius:14px;justify-content:flex-start;background:#191e1ff5;box-shadow:0 14px 36px #0007;border:1px solid #ffffff25;z-index:4}
-#topRight.expanded .pill{display:inline-flex!important}
-#topRight.expanded .pill.hidden{display:none!important}
-#mobileMenuBtn{display:inline-flex!important}
+@media(max-width:720px){#top{top:12px;left:13px;right:13px}.logo{font-size:30px}.pill{padding:9px 11px;font-size:11px}#bottom{display:none}#prompt{bottom:146px;font-size:11px;max-width:90vw;white-space:normal;text-align:center}#joystick,#mobileInteract{display:block}#status{bottom:10px;right:12px}.editorGrid{grid-template-columns:1fr}#sculptView{height:290px}.modal{padding:18px}#crosshair{font-size:18px}
+
 }
 #flapPreview{margin:12px 0 16px;padding:24px 10px;border:7px solid #383e3d;border-radius:9px;background:#171a1a;box-shadow:inset 0 0 0 6px #080a0a;color:#f3f5f1;text-align:center;font-family:monospace;font-size:clamp(13px,3.6vw,23px);letter-spacing:.13em;line-height:2;white-space:pre;font-variant-numeric:tabular-nums;overflow:hidden}
 #flapMessages{min-height:230px;line-height:1.6;font-size:15px;letter-spacing:.015em}
@@ -21,8 +14,34 @@
 #mixedPanel .toolrow button:disabled{opacity:.36;cursor:not-allowed}
 #mixedPanel input[type=color]{padding:4px;background:#272d2c}
 @media(max-width:720px){#editor .tabrow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#editor .tab{white-space:nowrap;flex:0 0 auto;font-size:11px;padding:11px 12px}#mixedPanel .toolrow button{flex:1}}
-</style><link rel="stylesheet" href="./editor-layout.css?v=20261010-editor2"></head><body>
-<div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight"><button class="pill" id="mobileMenuBtn" style="display:none">MENU</button><button class="pill active" id="galleryBtn">GALLERY</button><button class="pill" id="depotBtn">DEPOT</button><button class="pill" id="giBtn" title="Toggle saved static GI lightmap">LIGHT: BAKED</button><button class="pill" id="soundBtn" title="Toggle museum audio">SOUND: ON</button><button class="pill" id="catalogBtn">COLLECTION</button><button class="pill" id="flapBtn" title="Edit the gallery split-flap display">DISPLAY</button><span class="pill" id="cloudStatus">LOCAL ONLY</span><button class="pill hidden" id="syncBtn" title="Refresh public collection">SYNC</button><button class="pill" id="accountBtn">MAINTENANCE</button><button class="pill hidden" id="adminBtn">ADMIN</button><button class="pill" id="aboutBtn">ABOUT</button></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> baked lighting<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">STATIC GLOBAL ILLUMINATION</span></div></div>
+</style><link rel="stylesheet" href="./editor-layout.css?v=20261010-editor2"><link rel="stylesheet" href="./museum-settings.css?v=settings1"></head><body>
+<div id="world"></div><div id="hud"><div id="top"><div class="logo">MAD<small>MUSEUM OF ART & DISCOVERY</small></div><div id="topRight">
+<button class="pill mainNavBtn active" id="galleryBtn">GALLERY</button>
+<button class="pill mainNavBtn" id="depotBtn">DEPOT</button>
+<div id="settingsWrap">
+<button id="settingsBtn" type="button" aria-label="Open settings" title="Museum settings"
+  aria-expanded="false" aria-controls="settingsMenu" aria-haspopup="true">
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/>
+<circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>
+</svg>
+</button>
+<div id="settingsMenu" class="hidden" role="group" aria-label="Museum settings">
+<div class="settingsTitle">Settings</div>
+<div class="settingsSectionLabel">EXPERIENCE</div>
+<button class="settingsAction" id="giBtn" title="Toggle static baked global illumination">LIGHT: BAKED</button>
+<button class="settingsAction" id="soundBtn" title="Toggle museum audio">SOUND: ON</button>
+<div class="settingsSectionLabel">MUSEUM</div>
+<button class="settingsAction" id="catalogBtn">COLLECTION</button>
+<button class="settingsAction" id="flapBtn" title="Edit the gallery split-flap display">DISPLAY</button>
+<button class="settingsAction hidden" id="syncBtn" title="Refresh public collection">SYNC</button>
+<button class="settingsAction" id="aboutBtn">ABOUT MAD</button>
+<div class="settingsSectionLabel">MAINTENANCE</div>
+<button class="settingsAction" id="accountBtn">MAINTENANCE LOGIN</button>
+<button class="settingsAction hidden" id="adminBtn">ADMIN PANEL</button>
+<div class="settingsCloud"><span id="cloudStatus" class="pill">LOCAL ONLY</span></div>
+</div>
+</div></div></div><div id="crosshair">+</div><div id="toast"></div><div id="bottom"><div class="help"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp; <kbd>Mouse</kbd> look<br><kbd>E</kbd> interact &nbsp; <kbd>Shift</kbd> sprint &nbsp; <kbd>Esc</kbd> cursor &nbsp; <kbd>G</kbd> baked lighting<br><span style="color:#d6fd68">Click to lock the mouse · free-look works without lock</span></div><button id="mouseBtn" class="pill" style="pointer-events:auto">LOCK MOUSE</button></div><div id="prompt"></div><div id="joystick"><div id="stick"></div></div><div id="mobileInteract"><button id="useBtn">USE</button></div><div id="status">EXHIBITIONS · 14 DAYS<br>CREATED BY EVERYONE<br><span id="giStatus">STATIC GLOBAL ILLUMINATION</span></div></div>
 <div class="overlay open" id="start"><div class="modal"><div class="startBrand">MAD<span style="color:#d6fd68">.</span></div><h1>A museum made by everyone.</h1><p>Explore an ever-changing gallery. Claim an empty exhibition spot, make something impossible, and show it to the world. After 14 days, works move to the permanent Depot.</p><div class="notice">No sign-in required. Give your artwork a title and description, then place it directly in the shared museum.</div><button class="btn" id="enterBtn">ENTER THE MUSEUM →</button><p style="margin-top:15px">Desktop: WASD + mouse · Mobile: left thumb move, swipe right side to look</p></div></div>
 <div class="overlay" id="account"><div class="modal" style="max-width:480px">
 <button class="close" data-close="account" aria-label="Close">×</button>
@@ -95,7 +114,7 @@ window.addEventListener('unhandledrejection',function(e){const el=document.getEl
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js';
 import { StaticMuseumLighting } from './static-lightmap.js?v=static1';
-import {addSleepingGuard} from './museum-guard.js?v=guard1';
+import {addSleepingGuard} from './museum-guard.js?v=guard2';
 import { buildMuseumEnvironment } from './museum-environment.js?v=20261010-light1';
 import { buildDepotArchive } from './museum-depot.js?v=20261010-expansion3';
 import { buildWhiteTransition, buildNorthWingPassage, buildWingArrivalCorridor, buildNewWing,
@@ -808,7 +827,7 @@ function interact(){
     inspector.open(a,a.mounting||slots.find(s=>s.id===a.spotId)?.type||'plinth');
   }
 }
-function show(id){document.exitPointerLock?.();previousMouse=null;$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close();if(id==='editor'&&!publishingArt){editingSpotId=null;activeSpot=null}}
+function show(id){document.exitPointerLock?.();previousMouse=null;setSettingsOpen(false);$(id).classList.add('open')}function hide(id){$(id).classList.remove('open');if(id==='info')inspector?.close();if(id==='editor'&&!publishingArt){editingSpotId=null;activeSpot=null}}
 function tick(now){requestAnimationFrame(tick);
 if(depotDoorLeaf){
   const nearby=camera.position.x>15.6&&Math.abs(camera.position.z)<2.4;
@@ -864,7 +883,9 @@ document.addEventListener('keydown',e=>{
 if(e.code==='Escape'){
   if($('info').classList.contains('open'))hide('info');
   else if($('catalog').classList.contains('open'))hide('catalog');
-  else if($('topRight').classList.contains('expanded'))$('mobileMenuBtn').click();
+  else if(!$('settingsMenu').classList.contains('hidden')){
+    setSettingsOpen(false);$('settingsBtn').focus();
+  }
 }
 keys[e.code]=true;if(e.code==='KeyG'&&!e.repeat&&museumActive())cycleGi();if(e.code==='KeyE'&&!e.repeat&&museumActive())interact()});document.addEventListener('keyup',e=>keys[e.code]=false);// Pointer lock is the preferred desktop FPS control. Some embedded browsers
 // refuse it, so moving the mouse across the canvas also provides free-look.
@@ -1049,10 +1070,22 @@ function cycleGi(){
   toast(state==='BAKED'?'Baked lightmaps enabled':'Baked lightmaps disabled');
 }
 $('giBtn').onclick=cycleGi;
-$('mobileMenuBtn').onclick=()=>{
-  $('topRight').classList.toggle('expanded');
-  $('mobileMenuBtn').textContent=$('topRight').classList.contains('expanded')?'CLOSE':'MENU';
+function setSettingsOpen(open){
+  $('settingsMenu').classList.toggle('hidden',!open);
+  $('settingsBtn').setAttribute('aria-expanded',String(open));
+  $('settingsBtn').setAttribute('aria-label',open?'Close settings':'Open settings');
+  if(open)document.exitPointerLock?.();
+}
+$('settingsBtn').onclick=event=>{
+  event.stopPropagation();
+  setSettingsOpen($('settingsMenu').classList.contains('hidden'));
 };
+document.addEventListener('pointerdown',event=>{
+  if(!event.target.closest('#settingsWrap'))setSettingsOpen(false);
+},true);
+for(const id of ['catalogBtn','flapBtn','syncBtn','accountBtn','adminBtn','aboutBtn']){
+  $(id).addEventListener('click',()=>setSettingsOpen(false));
+}
 $('soundBtn').onclick=()=>{
   museumAudio.start();
   const muted=museumAudio.setMuted(!museumAudio.muted);

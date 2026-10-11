@@ -82,6 +82,10 @@ The baked solution is an **architectural proxy approximation**, not a production
 
 New voxel artwork uses a **2× finer grid** in each axis, including a 21×21 wall-relief canvas instead of the legacy 9×9 grid. **Add, Paint and Remove** tools can be used with the existing palette. Every painted cell now saves its own `#RRGGBB` colour, and exhibition mode draws all cells efficiently through one instance-coloured mesh. Existing older voxel works without per-cell colour or a `voxelResolution` property still render with their original overall colour and original voxel size.
 
+## Sleeping museum guard
+
+The main gallery contains the user-provided sleeping security-guard model, seated in a quiet northwest corner at X=-16.7, Z=-9.35. The original 19 MB Meshy GLB was optimized to a 472 KB glTF Binary while retaining all 6,261 triangles and UVs with a compressed 512-pixel color texture. `museum-guard.js` loads it only in the main gallery with GLTFLoader, scales it to a seated human height, grounds it on the floor and skips any async completion if the room has since been destroyed. His footprint is blocked from player movement but does not occupy an exhibition space.
+
 ## Artwork editor layout (desktop / mobile)
 
 The editor now runs as a dedicated workstation instead of a single vertically scrolling modal. Desktop presents a nearly full-window 2D/3D canvas and a fixed right-hand inspector with **Create**, **Appearance** and **Artwork Info** tabs. **Place in Museum** is always in the bottom bar and requires the title and description.

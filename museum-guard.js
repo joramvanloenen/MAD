@@ -35,8 +35,8 @@ export async function addSleepingGuard(scene,{eco=false}={}){
     if(!Number.isFinite(size.y)||size.y<.2){
       disposeModel(model);throw Error('Unexpected guard GLB dimensions');
     }
-    // A seated person and chair reach roughly 1.55 meters.
-    model.scale.setScalar(1.55/size.y);
+    // Make the seated guard subtly more present: 1.70 m overall height.
+    model.scale.setScalar(1.70/size.y);
     model.updateMatrixWorld(true);
     const settled=new THREE.Box3().setFromObject(model);
     model.position.set(
@@ -53,7 +53,9 @@ export async function addSleepingGuard(scene,{eco=false}={}){
     const root=new THREE.Group();
     root.name='Sleeping Museum Guard';
     root.position.set(-16.70,0,-9.35);
-    root.rotation.y=-Math.PI*.75;
+    // Rotate exactly 180 degrees around the root's WORLD-space up axis.
+    // Previous angle was -135°, so the corrected facing angle is +45°.
+    root.rotation.y=Math.PI*.25;
     root.add(model);
     // The fixed building lightmap excludes this decorative character.
     root.userData.madStatic=false;

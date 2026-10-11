@@ -1,0 +1,76 @@
+/* MAD minimal museum header and floating settings palette */
+#top{z-index:6}
+#topRight{position:relative;display:flex;flex-wrap:nowrap;align-items:center;
+  justify-content:flex-end;gap:8px;min-width:0;max-width:calc(100vw - 125px)}
+#topRight>.mainNavBtn{display:inline-flex;align-items:center;justify-content:center;
+  min-height:43px;white-space:nowrap;font-size:11px;font-weight:720;letter-spacing:.035em}
+#settingsWrap{position:relative;flex:none}
+#settingsBtn{display:grid;place-items:center;width:44px;height:44px;
+  padding:0;border-radius:50%;background:#171c1eea;border:1px solid #ffffff3d;
+  color:#f0f4ef;box-shadow:0 3px 14px #0003;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:background .18s,border-color .18s,transform .18s}
+#settingsBtn svg{width:21px;height:21px;fill:none;stroke:currentColor;
+  stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round;
+  transition:transform .22s}
+#settingsBtn:hover{background:#283333;border-color:#d6fd6880}
+#settingsBtn[aria-expanded=true]{color:#172014;background:#d6fd68;
+  border-color:#d6fd68}
+#settingsBtn[aria-expanded=true] svg{transform:rotate(12deg)}
+#settingsBtn:focus-visible,#settingsMenu button:focus-visible{
+  outline:2px solid #d6fd68;outline-offset:3px}
+#settingsMenu{position:absolute;right:0;top:calc(100% + 12px);
+  width:min(300px,calc(100vw - 24px));max-height:min(78dvh,640px);
+  overflow-y:auto;overscroll-behavior:contain;
+  display:flex;flex-direction:column;gap:4px;
+  padding:13px;border:1px solid #64716b75;border-radius:18px;
+  background:linear-gradient(155deg,#232c2bee,#151c1df9);
+  box-shadow:0 22px 75px #000a,0 4px 15px #0005;
+  color:#edf2ed;backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);scrollbar-width:thin;
+  scrollbar-color:#4e5e57 transparent}
+#settingsMenu.hidden{display:none!important}
+#settingsMenu .hidden{display:none!important}
+#settingsMenu .settingsTitle{font-size:15px;font-weight:820;
+  letter-spacing:-.015em;color:#f0f2ef;padding:2px 5px 5px}
+#settingsMenu .settingsSectionLabel{font-size:10px;letter-spacing:.14em;
+  color:#98a8a1;font-weight:800;padding:12px 7px 4px}
+#settingsMenu .settingsSectionLabel:first-of-type{padding-top:5px}
+#settingsMenu .settingsAction{display:flex;align-items:center;justify-content:space-between;
+  width:100%;min-height:42px;text-align:left;
+  border:1px solid transparent;border-radius:10px;
+  background:#ffffff0c;color:#e6ebe5;padding:10px 12px;font-size:12px;
+  font-weight:660;letter-spacing:.017em;white-space:normal;
+  cursor:pointer;transition:background .16s,border-color .16s}
+#settingsMenu .settingsAction:hover{background:#ffffff19;border-color:#ffffff25}
+#settingsMenu .settingsAction.active{background:#d6fd6817;
+  color:#d6fd68;border-color:#d6fd684b}
+#settingsMenu .settingsAction:disabled{opacity:.4;cursor:not-allowed}
+#settingsMenu #cloudStatus{border-radius:9px;font-size:10px;
+  background:none;backdrop-filter:none;border:0;color:#d6fd68;
+  padding:6px 5px;white-space:normal;font-weight:720}
+#settingsMenu .settingsCloud{display:flex;align-items:center;justify-content:space-between;
+  min-height:36px;margin-top:7px;padding:4px 6px;
+  border-top:1px solid #ffffff18;color:#a1b0a6;
+  gap:6px;font-size:10px;letter-spacing:.05em}
+#settingsMenu .settingsCloud::before{content:"CONNECTION";font-weight:720}
+#settingsMenu .settingsCloud #cloudStatus{min-width:0;text-align:right}
+@media(max-width:720px){
+ #top{left:12px;right:12px;top:11px;gap:5px}
+ #topRight{max-width:calc(100vw - 110px);gap:5px}
+ #topRight>.mainNavBtn{font-size:10px;padding:8px 11px;min-height:39px}
+ #settingsBtn{width:40px;height:40px}
+ #settingsBtn svg{width:19px;height:19px}
+ #settingsMenu{top:calc(100% + 9px);width:min(300px,calc(100vw - 24px));
+   max-height:min(78dvh,650px);padding:11px;border-radius:15px}
+ #settingsMenu .settingsAction{min-height:39px;padding:9px 11px}
+}
+@media(max-width:370px){
+ #topRight>.mainNavBtn{font-size:9px;padding:7px 8px}
+ #topRight{max-width:calc(100vw - 90px)}
+ #settingsBtn{height:38px;width:38px}
+ #settingsMenu{width:min(280px,calc(100vw - 20px))}
+}
+@media(prefers-reduced-motion:reduce){
+ #settingsBtn,#settingsBtn svg,#settingsMenu .settingsAction{transition:none}
+}

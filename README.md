@@ -1,5 +1,7 @@
 # MAD — Museum of Art & Discovery
 
+**[Open MAD — play the museum on GitHub Pages](https://joramvanloenen.github.io/MAD/)**
+
 MAD is a walkable 3D museum where visitors create and exhibit artwork for 14 days, after which it moves to the visitable Depot. Hosted on GitHub Pages from the main branch.
 
 ## Running and developing
@@ -10,7 +12,9 @@ The museum includes connected gallery spaces, procedural oak flooring, exhibitio
 
 ## Public visitor gallery and private maintenance access
 
-MAD is an **account-free creative museum**. Visitors do not sign up or sign in. They can choose an empty exhibition space, create their artwork, provide a name and description, and press **PLACE IN MUSEUM**. The gallery submits the full artwork directly to the shared MAD Supabase database and displays it to everybody immediately if that space is still free. This includes 2D painting images, mixed-material baked meshes, sculpted clay and coloured voxels. The browser's old `localStorage` collection is no longer treated as publicly shared when Supabase is connected.
+MAD is an **account-free creative museum**. Visitors do not sign up or sign in. They can create 2D paintings, sculpted clay, coloured voxels and mixed-media sculptures, and press **PLACE IN MUSEUM**. **Every submission is saved to this browser first**, in IndexedDB (with a localStorage fallback). When Supabase is reachable, MAD also publishes it to the shared gallery. When Supabase is offline, the work stays in the local museum on this device, and can be published later through **Maintenance → Publish older browser artworks** when the server returns. Previously saved `mad-artworks-v1` localStorage works are still loaded and can be uploaded. The last successfully loaded public gallery is also cached for offline viewing.
+
+**Important:** GitHub Pages hosts static files and cannot accept shared public submissions by itself. IndexedDB survives reloads and ordinary browser restarts on the same browser profile, but it is **not a cross-device shared database** and can be cleared by private browsing, browser cleanup, device loss or quota limits. Use **Settings → BACK UP ARTWORKS** to download a JSON archive, and **RESTORE BACKUP** to import it. These backups contain local and cached public artworks. Restored copies stay local until explicitly republished; the maintenance code remains server-verified and cannot be used offline. A reliable, shared museum with no third-party database would require an owned writable backend (such as a small self-hosted API and database).
 
 MAD uses Supabase project **MAD** (`hzpvktvrlocjubargvod`) and its *publishable* browser key. Sensitive keys and the administrator's access code are **never** stored in GitHub. Works last 14 days in the gallery and then move into the Depot; artworks in the hidden After Hours gallery remain displayed until removed by maintenance.
 
@@ -52,11 +56,12 @@ WASD/mouse: walk/look. Shift: sprint. E: interact. Esc: release pointer. G: bake
 - `split-flap.js`: animated black 16-column × 3-row mechanical arrival board beside the Depot door, with white flap lettering, green indicator tiles, alternating recent artist/title notices and cryptic messages. Interact using E near the board or use the DISPLAY menu button. Edit messages as multiline blocks separated by a blank line; Save persists only in the current browser's localStorage, not globally across visitors.
 - `museum-audio.js`: five locally hosted, recorded footsteps on wood, matched to distance walked (roughly 0.6 seconds between contacts at normal walking speed), gentle per-step pitch variation and short room reflections.
 - `museum-placement.js`: immutable gallery spot IDs, occupancy verification, and camera return to the exact newly filled spot.
-- `museum-store.js`, `museum-account-ui.js`, `supabase/schema.sql` and `mad-config.js`: anonymous shared storage, maintenance-code login, and secure database controls.
+- `museum-local-store.js`: IndexedDB offline artwork storage, public-cache snapshot, legacy localStorage support and JSON backup/restore.
+- `museum-store.js`, `museum-account-ui.js`, `supabase/schema.sql` and `mad-config.js`: optional shared storage, maintenance-code login, and secure database controls.
 
 ## Known limitations
 
-This remains a prototype. The MAD cloud project is connected; public submissions are enabled without authentication. SQL protects simultaneous **approval** of artworks for the same active slot, but pending submissions may still compete; larger media require object storage, and live cross-device QA, moderation tooling, performance profiling and accessibility work remain important.
+This remains a prototype. The MAD cloud project is configured but may be unavailable; offline submissions are local to one browser profile, not visible to other visitors. SQL protects simultaneous **approval** of artworks for the same active slot, but pending submissions may still compete; larger media require object storage, and live cross-device QA, moderation tooling, performance profiling and accessibility work remain important.
 
 ## Footstep recording license
 

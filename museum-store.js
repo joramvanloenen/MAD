@@ -7,13 +7,14 @@ export class MuseumStore {
     this.url=(CLOUD.url||'').trim().replace(/\/+$/,'');
     this.anonKey=(CLOUD.anonKey||'').trim();
     this.enabled=Boolean(this.url&&this.anonKey);
-    this.client=null;this.ready=false;this.isAdmin=false;
+    this.client=null;this.ready=false;this.online=false;this.isAdmin=false;
     this.listeners=new Set();this.sessionKey='mad-admin-session-v1';
     try{this.adminToken=sessionStorage.getItem(this.sessionKey)||null}
     catch{this.adminToken=null}
   }
   onChange(fn){this.listeners.add(fn);return()=>this.listeners.delete(fn)}
   emit(){for(const fn of this.listeners)try{fn(this)}catch(e){console.error(e)}}
+  setOnline(value){if(this.online!==Boolean(value)){this.online=Boolean(value);this.emit()}}
   async init(){
     if(!this.enabled){this.ready=true;this.emit();return}
     try{

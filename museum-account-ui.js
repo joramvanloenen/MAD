@@ -1,25 +1,27 @@
 // MAD maintenance dashboard. No visitor sign-in is required or offered.
 // All permissions are checked by Supabase RPCs using a short-lived admin token.
-export function installAccountUI({store,show,hide,toast,sync,storageKey}){
+export function installAccountUI({store,localStore,show,hide,toast,sync,storageKey}){
   const $=id=>document.getElementById(id);
-  let importedLocal=false;
-  const localArt=()=>{try{return JSON.parse(localStorage.getItem(storageKey)||'[]')}
-    catch{return []}};
+  const localArt=()=>localStore.listLocal();
   const label=(value,max=160)=>String(value??'').slice(0,max);
   function refreshUI(){
-    $('cloudStatus').textContent=!store.enabled?'LOCAL ONLY':
-      !store.ready?'CONNECTING…':'PUBLIC GALLERY · ONLINE';
+    $('cloudStatus').textContent=!store.enabled?'ON THIS DEVICE':
+      !store.ready?'CONNECTING…':store.online?'PUBLIC GALLERY · ONLINE':'SAVED LOCALLY · SERVER OFFLINE';
     $('syncBtn').classList.toggle('hidden',!store.enabled);
     $('accountBtn').textContent=store.isAdmin?'MAINTENANCE ✓':'MAINTENANCE';
     $('adminBtn').classList.toggle('hidden',!store.isAdmin);
     $('maintenanceLogin').classList.toggle('hidden',store.isAdmin);
     $('maintenanceLogout').classList.toggle('hidden',!store.isAdmin);
     $('maintenanceCode').value='';
-    $('accountStatus').textContent=!store.enabled?'Server is not configured.':
+    $('accountStatus').textContent=!store.enabled?'Artworks are stored in this browser, not shared.':
       store.isAdmin?'Maintenance access active · expires after 12 hours':
-      'Visitors can publish without an account. Only the administrator needs a code.';
-    $('migrateArtworks').classList.toggle('hidden',
-      !store.enabled||!store.ready||!localArt().length);
+      store.online?'Public gallery is online. Only maintenance needs a code.':
+      'Shared gallery is offline. New artworks are safely saved in this browser only; backups are in Settings.';
+    $('maintenanceLogin').disabled=!store.online;
+    $('migrateArtworks').classList.add('hidden');
+    if(store.online)localArt().then(works=>{
+      $('migrateArtworks').classList.toggle('hidden',!works.length);
+    }).catch(error=>console.warn('Could not enumerate offline artwork',error));
   }
   store.onChange(refreshUI);refreshUI();
   $('accountBtn').onclick=()=>{refreshUI();show(store.isAdmin?'admin':'account')};
@@ -45,7 +47,7 @@ export function installAccountUI({store,show,hide,toast,sync,storageKey}){
     catch(e){toast(e.message)}
   };
   $('migrateArtworks').onclick=async()=>{
-    const works=localArt().filter(a=>a?.id&&a.spotId&&a.title&&a.desc);
+    const works=(await localArt()).filter(a=>a?.id&&a.spotId&&a.title&&a.desc);
     if(!works.length)return;
     if(!confirm('Upload '+works.length+' older browser artworks to the public MAD museum? These will be immediately visible to everyone. Original local copies stay saved.'))return;
     $('migrateArtworks').disabled=true;
@@ -54,8 +56,12 @@ export function installAccountUI({store,show,hide,toast,sync,storageKey}){
       const existing=new Set((await store.load()).map(a=>a.id));
       for(const art of works){
         if(existing.has(art.id)){skipped++;continue}
-        try{await store.submit(art);done++}
-        catch(e){failed++;console.warn('Upload error',art.id,e)}
+        try{
+          const saved=await store.submit(art);
+          await localStore.rememberRemote({...art,status:saved.status,createdAt:saved.createdAt});
+          await localStore.removeLocal(art.id);
+          done++;
+        }catch(e){failed++;console.warn('Upload error',art.id,e)}
       }
       $('importReport').textContent='Published: '+done+' · Already online: '+
         skipped+' · Failed: '+failed+'. Originals were kept in this browser.';

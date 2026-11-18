@@ -1909,7 +1909,7 @@ $('publish').onclick=async()=>{
     return;
   }
   a.localOnly=true;
-  if(museumStore.enabled&&museumStore.client){
+  if(museumStore.enabled&&museumStore.client&&museumStore.online){
     try{
       const saved=await museumStore.submit(a);
       a.status=saved.status;
